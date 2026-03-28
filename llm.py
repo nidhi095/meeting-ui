@@ -5,10 +5,8 @@ import google.generativeai as genai
 # ── Load API Key safely ────────────────────────────────────────────────────────
 api_key = st.secrets.get("GOOGLE_API_KEY")
 
-if not api_key:
-    # DO NOT crash import, just store None and handle later
-    client = None
-else:
+model = None
+if api_key:
     genai.configure(api_key=api_key)
     model = genai.GenerativeModel("gemini-2.5-flash")
 
@@ -55,20 +53,12 @@ Transcript:
 {transcript}
 """
 
-
 def clean_model_output(raw_text: str) -> str:
-    """
-    Removes accidental markdown code fences if the model returns them.
-    """
     text = raw_text.strip()
     text = text.replace("```json", "").replace("```", "").strip()
     return text
 
-
 def apply_fallbacks(data: dict) -> dict:
-    """
-    Ensures output always has the expected structure.
-    """
     if not isinstance(data, dict):
         data = {}
 
@@ -98,13 +88,11 @@ def apply_fallbacks(data: dict) -> dict:
             "notes": str(task.get("notes", "")).strip()
         }
 
-        # Normalize priority
         if fixed_task["priority"] not in {"High", "Medium", "Low"}:
             fixed_task["priority"] = "Medium"
 
         fixed_tasks.append(fixed_task)
 
-        # Auto-add risks
         if fixed_task["assigned_to"] == "Unassigned":
             risk = f"Task '{fixed_task['task']}' has no clear owner."
             if risk not in data["risks"]:
@@ -118,11 +106,7 @@ def apply_fallbacks(data: dict) -> dict:
     data["tasks"] = fixed_tasks
     return data
 
-
 def extract_tasks(transcript: str) -> dict:
-    """
-    Converts transcript text into structured JSON using Gemini.
-    """
     if not transcript or not transcript.strip():
         return {
             "summary": "No transcript provided.",
@@ -131,11 +115,18 @@ def extract_tasks(transcript: str) -> dict:
             "risks": ["Transcript input is empty."]
         }
 
+    if model is None:
+        return {
+            "summary": "API key missing.",
+            "decisions": [],
+            "tasks": [],
+            "risks": ["GOOGLE_API_KEY not found in Streamlit secrets."]
+        }
+
     prompt = PROMPT_TEMPLATE.format(transcript=transcript)
 
     try:
         response = model.generate_content(prompt)
-
         raw_output = response.text or ""
         cleaned_output = clean_model_output(raw_output)
 
@@ -157,7 +148,6 @@ def extract_tasks(transcript: str) -> dict:
             "tasks": [],
             "risks": [f"Error: {str(e)}"]
         }
-
 
 if __name__ == "__main__":
     sample_transcript = '''
