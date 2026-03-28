@@ -17,19 +17,19 @@ st.markdown(
     @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=DM+Mono:wght@300;400;500&family=Lora:ital,wght@0,400;0,600;1,400&display=swap');
 
     :root {
-        --bg:          #e8dcc8;
-        --bg-deep:     #ddd0b5;
-        --bg-card:     #f0e9d8;
-        --ink:         #1e1608;
-        --ink-mid:     #3d3020;
-        --ink-soft:    #7a6a50;
-        --gold:        #c07818;
-        --gold-light:  #e8a030;
-        --rust:        #b04020;
-        --sage:        #4a7a50;
-        --warm-white:  #f8f2e4;
-        --border:      #c8b898;
-        --shadow:      rgba(30, 22, 8, 0.18);
+        --bg:          #e2d4b8;
+        --bg-deep:     #d6c8a8;
+        --bg-card:     #ede4ce;
+        --ink:         #1a1206;
+        --ink-mid:     #362a14;
+        --ink-soft:    #6e5e40;
+        --gold:        #b86e10;
+        --gold-light:  #d8922a;
+        --rust:        #a83818;
+        --sage:        #3e6e44;
+        --warm-white:  #f4edd8;
+        --border:      #bca882;
+        --shadow:      rgba(26, 18, 6, 0.20);
     }
 
     @keyframes fadeUp {
@@ -65,8 +65,44 @@ st.markdown(
     html, body, [class*="css"] {
         font-family: 'Lora', serif;
         background: var(--bg) !important;
-        color: var(--ink);
+        color: var(--ink) !important;
     }
+
+    /* ── Nuke ALL white / near-white text Streamlit injects ── */
+    p, span, div, label, li, small, strong, em, h1, h2, h3, h4, h5, h6,
+    [class*="st-"], [data-testid] p, [data-testid] span,
+    [data-testid] label, [data-testid] div,
+    .stMarkdown, .stMarkdown *, .stText, .element-container * {
+        color: var(--ink-mid) !important;
+    }
+    /* Exceptions: things that intentionally use light text on dark bg */
+    div.stButton > button,
+    [data-testid="stDownloadButton"] button,
+    .stTabs [aria-selected="true"],
+    .hero h1,
+    .task-num,
+    .hero-logo svg *,
+    .chip-warn, .chip-ok,
+    .risk-orb,
+    .decision-num {
+        color: unset !important;
+    }
+    /* File uploader specifically */
+    [data-testid="stFileUploader"] p,
+    [data-testid="stFileUploader"] span,
+    [data-testid="stFileUploader"] div,
+    [data-testid="stFileUploader"] small,
+    [data-testid="stFileUploader"] label {
+        color: var(--ink-mid) !important;
+    }
+    /* Spinner text */
+    .stSpinner p, .stSpinner span, .stSpinner label {
+        color: var(--ink-mid) !important;
+    }
+    /* Audio player label */
+    audio { filter: sepia(0.15) contrast(0.9); }
+    /* Any stray white backgrounds Streamlit adds */
+    [data-testid="stMarkdownContainer"] * { color: var(--ink-mid); }
 
     .stApp {
         background: var(--bg) !important;
@@ -94,23 +130,25 @@ st.markdown(
     .bg-orbs span {
         position: absolute;
         border-radius: 50%;
-        border: none;
-        animation: spin-slow linear infinite;
+        animation: floatBubble ease-in-out infinite;
     }
     .bg-orbs span:nth-child(1) {
-        width: 420px; height: 420px; top: -140px; right: -100px;
-        animation-duration: 60s; opacity: 0.55;
-        background: radial-gradient(circle at 40% 40%, rgba(192,120,24,0.28), rgba(200,184,152,0.08) 70%);
+        width: 400px; height: 400px; top: -130px; right: -90px;
+        animation-duration: 8s; opacity: 0.38;
+        background: radial-gradient(circle at 38% 38%, #d4922a, #c07818 50%, transparent 80%);
+        box-shadow: inset 0 0 60px rgba(192,120,24,0.3), 0 0 0 2px rgba(192,120,24,0.2);
     }
     .bg-orbs span:nth-child(2) {
-        width: 280px; height: 280px; bottom: 60px; left: -80px;
-        animation-duration: 45s; animation-direction: reverse; opacity: 0.5;
-        background: radial-gradient(circle at 55% 45%, rgba(176,64,32,0.24), rgba(200,184,152,0.06) 70%);
+        width: 290px; height: 290px; bottom: 30px; left: -75px;
+        animation-duration: 10s; animation-delay: 1.8s; opacity: 0.32;
+        background: radial-gradient(circle at 45% 42%, #c45030, #b04020 50%, transparent 80%);
+        box-shadow: inset 0 0 40px rgba(176,64,32,0.25), 0 0 0 2px rgba(176,64,32,0.15);
     }
     .bg-orbs span:nth-child(3) {
-        width: 200px; height: 200px; top: 38%; left: 54%;
-        animation-duration: 35s; opacity: 0.45;
-        background: radial-gradient(circle at 50% 50%, rgba(74,122,80,0.22), rgba(200,184,152,0.05) 70%);
+        width: 200px; height: 200px; top: 36%; left: 53%;
+        animation-duration: 7s; animation-delay: 0.9s; opacity: 0.28;
+        background: radial-gradient(circle at 50% 48%, #5a8a60, #4a7a50 50%, transparent 80%);
+        box-shadow: inset 0 0 30px rgba(74,122,80,0.2), 0 0 0 2px rgba(74,122,80,0.12);
     }
 
     /* ── Hero ── */
@@ -374,22 +412,26 @@ st.markdown(
         z-index: 1;
     }
     .transcript-box::before {
-        content: '\201C';
+        content: open-quote;
         position: absolute;
         top: 0.5rem; left: 1rem;
         font-family: 'Playfair Display', serif;
-        font-size: 4rem;
-        color: var(--border);
+        font-size: 5rem;
+        color: var(--gold-light);
+        opacity: 0.45;
         line-height: 1;
+        quotes: "\201C" "\201D";
     }
     .transcript-box::after {
-        content: '\201D';
+        content: close-quote;
         position: absolute;
-        bottom: 0.2rem; right: 1.2rem;
+        bottom: -1rem; right: 1.2rem;
         font-family: 'Playfair Display', serif;
-        font-size: 4rem;
-        color: var(--border);
+        font-size: 5rem;
+        color: var(--gold-light);
+        opacity: 0.45;
         line-height: 1;
+        quotes: "\201C" "\201D";
     }
 
     /* ── Summary box ── */
