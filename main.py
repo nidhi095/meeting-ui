@@ -398,8 +398,8 @@ st.markdown(
         transition: all 0.2s ease !important;
     }
     .stTabs [aria-selected="true"] {
-        background: var(--ink) !important;
-        color: var(--warm-white) !important;
+        background: var(--gold) !important;
+        color: var(--ink) !important;
     }
     .stTabs [data-baseweb="tab-panel"] {
         padding-top: 1.4rem;
@@ -707,7 +707,10 @@ st.markdown(
         margin-top: 0.5rem;
     }
 
-    /* ── Scrollbar ── */
+    [data-testid="stFileUploader"] section svg,
+    [data-testid="stFileUploader"] section [data-testid="stFileUploaderDropzoneInstructions"] > div > span {
+        display: none !important;
+    }
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: var(--bg-deep); }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
