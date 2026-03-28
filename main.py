@@ -2,7 +2,6 @@ import streamlit as st
 import os
 import tempfile
 import json
-import matplotlib.pyplot as plt
 
 # ── Page config ────────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -25,7 +24,7 @@ st.markdown(
         --text-dim: #FFCC99;
     }
 
-    /* Global Overrides for Contrast */
+    /* Force global text colors for contrast */
     html, body, [class*="css"] {
         font-family: 'Lexend', sans-serif;
         color: var(--text-light) !important;
@@ -38,68 +37,69 @@ st.markdown(
     /* --- Logo Section --- */
     .header-box {
         text-align: center;
-        padding: 2rem 0;
+        padding: 2.5rem 0;
     }
 
     .logo-shape {
-        width: 60px;
-        height: 60px;
+        width: 50px;
+        height: 50px;
         background: var(--accent-orange);
         margin: 0 auto 1rem;
-        border-radius: 15px;
+        border-radius: 12px;
         display: flex;
         align-items: center;
         justify-content: center;
-        box-shadow: 0 10px 20px rgba(0,0,0,0.3);
     }
 
     .logo-inner {
-        width: 30px;
-        height: 30px;
-        border: 4px solid var(--bg-dark);
-        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        border: 3px solid var(--bg-dark);
+        border-radius: 4px;
     }
 
     .hero h1 {
-        font-size: 3rem;
+        font-size: 3.2rem;
         font-weight: 800;
         color: var(--accent-orange);
         margin: 0;
+        text-transform: uppercase;
         letter-spacing: -1px;
     }
 
     .hero p {
         font-size: 1rem;
         color: var(--accent-peach);
-        margin-top: 0.5rem;
+        margin-top: 0.4rem;
+        letter-spacing: 1px;
     }
 
-    /* --- Neumorphic Stat Circles --- */
+    /* --- Stat Bubbles --- */
     .stat-row {
         display: flex;
         justify-content: center;
-        gap: 25px;
+        gap: 20px;
         flex-wrap: wrap;
-        margin: 2rem 0;
+        margin: 2.5rem 0;
     }
 
-    .stat-circle {
+    .stat-bubble {
         background: var(--card-bg);
-        width: 130px;
-        height: 130px;
+        width: 120px;
+        height: 120px;
         border-radius: 50%;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        box-shadow: 10px 10px 20px #3d2400, -5px -5px 15px #5d3600;
+        box-shadow: 8px 8px 16px #3d2400, -4px -4px 12px #5d3600;
         border: 2px solid var(--accent-orange);
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        transition: transform 0.2s ease;
     }
 
-    .stat-circle:hover {
-        transform: scale(1.05);
-        box-shadow: 0 15px 30px rgba(0,0,0,0.4);
+    .stat-bubble:hover {
+        transform: translateY(-5px);
+        background: var(--bg-dark);
     }
 
     .stat-val {
@@ -109,63 +109,58 @@ st.markdown(
     }
 
     .stat-label {
-        font-size: 0.7rem;
+        font-size: 0.65rem;
         text-transform: uppercase;
-        letter-spacing: 1px;
         color: var(--accent-peach);
+        font-weight: 700;
     }
 
-    /* --- Form & UI Elements --- */
+    /* --- Form Elements --- */
     [data-testid="stFileUploader"] {
         background-color: var(--card-bg) !important;
         border: 2px dashed var(--accent-orange) !important;
-        border-radius: 12px !important;
+        border-radius: 10px !important;
     }
 
     div.stButton > button {
         background: var(--accent-orange);
         color: var(--bg-dark);
-        border: none;
-        border-radius: 8px;
+        border-radius: 6px;
         font-weight: 700;
         padding: 0.6rem 2rem;
-        transition: 0.2s;
+        width: 100%;
+        border: none;
     }
 
-    div.stButton > button:hover {
-        background: var(--accent-peach);
-        transform: translateY(-2px);
-    }
-
-    /* --- Cards --- */
+    /* --- Content Sections --- */
     .content-card {
         background: var(--card-bg);
         padding: 1.5rem;
-        border-radius: 12px;
+        border-radius: 10px;
         border-left: 6px solid var(--accent-orange);
         margin-bottom: 1rem;
-        box-shadow: 4px 4px 15px rgba(0,0,0,0.2);
     }
 
     .tag {
         display: inline-block;
         background: var(--bg-dark);
         color: var(--accent-peach);
-        padding: 3px 10px;
-        border-radius: 5px;
-        font-size: 0.8rem;
+        padding: 4px 12px;
+        border-radius: 4px;
+        font-size: 0.75rem;
         border: 1px solid var(--accent-orange);
         margin-right: 8px;
         font-weight: 600;
+        text-transform: uppercase;
     }
 
-    .risk-box {
+    .risk-alert {
         background: #6b2114;
         border: 1px solid #ff5a3d;
-        color: #fff;
+        color: #FFFDF1;
         padding: 1rem;
         border-radius: 8px;
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.8rem;
     }
 
     /* --- Tabs --- */
@@ -173,9 +168,8 @@ st.markdown(
     .stTabs [data-baseweb="tab"] {
         background: var(--card-bg);
         color: var(--text-dim);
-        border-radius: 8px 8px 0 0;
-        padding: 10px 20px;
-        margin-right: 4px;
+        border-radius: 6px 6px 0 0;
+        padding: 12px 24px;
     }
     .stTabs [aria-selected="true"] {
         background: var(--accent-orange) !important;
@@ -192,7 +186,7 @@ def load_stt():
         from stt import transcribe_audio
         return transcribe_audio
     except ImportError:
-        st.error("Could not import transcribe_audio from stt.py")
+        st.error("Missing stt.py file.")
         return None
 
 def load_llm():
@@ -200,16 +194,14 @@ def load_llm():
         from llm import extract_tasks
         return extract_tasks
     except ImportError:
-        st.error("Could not import extract_tasks from llm.py")
+        st.error("Missing llm.py file.")
         return None
 
 def compute_stats(result):
     tasks = result.get("tasks", [])
     total = len(tasks)
-    with_deadline = sum(1 for t in tasks if str(t.get("deadline", "")).strip() not in ["", "Not specified", "No deadline"])
     unassigned = sum(1 for t in tasks if str(t.get("assigned_to", "Unassigned")).strip() == "Unassigned")
-    assigned = total - unassigned
-    return total, with_deadline, unassigned, assigned, len(result.get("decisions", [])), len(result.get("risks", []))
+    return total, unassigned, len(result.get("decisions", [])), len(result.get("risks", []))
 
 # ── Header ─────────────────────────────────────────────────────────────────────
 st.markdown(
@@ -218,7 +210,7 @@ st.markdown(
         <div class="logo-shape"><div class="logo-inner"></div></div>
         <div class="hero">
             <h1>MeetingMind</h1>
-            <p>Intelligent meeting synthesis and task tracking</p>
+            <p>Task Extraction and Risk Analysis</p>
         </div>
     </div>
     """,
@@ -226,19 +218,19 @@ st.markdown(
 )
 
 # ── Input area ─────────────────────────────────────────────────────────────────
-c_upload, c_btn = st.columns([3, 1])
+c1, c2 = st.columns([3, 1])
 
-with c_upload:
-    uploaded_file = st.file_uploader(label="Upload meeting recording", type=["mp3", "wav", "m4a"], label_visibility="collapsed")
+with c1:
+    uploaded_file = st.file_uploader(label="Upload", type=["mp3", "wav", "m4a"], label_visibility="collapsed")
 
-with c_btn:
-    st.write("") # Spacing
-    process_clicked = st.button("Extract Intelligence")
+with c2:
+    st.write("") # Spacer
+    process_clicked = st.button("Process Audio")
 
 # ── Processing logic ───────────────────────────────────────────────────────────
 if process_clicked:
     if not uploaded_file:
-        st.warning("Please select an audio file to continue.")
+        st.warning("Upload an audio file to begin.")
         st.stop()
 
     suffix = os.path.splitext(uploaded_file.name)[-1]
@@ -250,82 +242,60 @@ if process_clicked:
     llm = load_llm()
 
     if stt and llm:
-        with st.spinner("Analyzing audio..."):
+        with st.spinner("Analyzing audio data..."):
             transcript = stt(tmp_path)
-        with st.spinner("Synthesizing insights..."):
+        with st.spinner("Extracting insights..."):
             result = llm(transcript)
 
         try: os.unlink(tmp_path)
         except: pass
 
-        # ── Dashboard ──
-        t_count, d_count, u_count, a_count, dec_count, r_count = compute_stats(result)
-
+        # ── Dashboard Bubbles ──
+        t_count, u_count, dec_count, r_count = compute_stats(result)
         st.markdown(f"""
             <div class="stat-row">
-                <div class="stat-circle"><div class="stat-val">{t_count}</div><div class="stat-label">Tasks</div></div>
-                <div class="stat-circle"><div class="stat-val">{dec_count}</div><div class="stat-label">Decisions</div></div>
-                <div class="stat-circle"><div class="stat-val">{r_count}</div><div class="stat-label">Risks</div></div>
+                <div class="stat-bubble"><div class="stat-val">{t_count}</div><div class="stat-label">Tasks</div></div>
+                <div class="stat-bubble"><div class="stat-val">{u_count}</div><div class="stat-label">Pending</div></div>
+                <div class="stat-bubble"><div class="stat-val">{dec_count}</div><div class="stat-label">Decisions</div></div>
+                <div class="stat-bubble"><div class="stat-val">{r_count}</div><div class="stat-label">Risks</div></div>
             </div>
         """, unsafe_allow_html=True)
 
-        # ── Chart and Details ──
-        col_chart, col_empty = st.columns([1, 1])
-        with col_chart:
-            st.markdown("### Task Assignment Status")
-            if t_count > 0:
-                fig, ax = plt.subplots(figsize=(4, 4))
-                fig.patch.set_facecolor('#4D2D00')
-                ax.set_facecolor('#4D2D00')
-                
-                labels = ['Assigned', 'Unassigned']
-                sizes = [a_count, u_count]
-                colors = ['#FF9955', '#FFCC99']
-                
-                wedges, texts, autotexts = ax.pie(
-                    sizes, labels=labels, autopct='%1.1f%%', 
-                    startangle=140, colors=colors, 
-                    textprops={'color': "#FFFDF1", 'weight': 'bold'}
-                )
-                plt.setp(autotexts, size=10, weight="bold")
-                plt.tight_layout()
-                st.pyplot(fig)
-            else:
-                st.write("No tasks found to chart.")
+        # ── Result Tabs ──
+        tab_tasks, tab_sum, tab_risk, tab_dec, tab_trans = st.tabs(["Tasks", "Summary", "Risks", "Decisions", "Transcript"])
 
-        # ── Tabs ──
-        tab_t, tab_s, tab_r, tab_d, tab_txt = st.tabs(["Tasks", "Summary", "Risks", "Decisions", "Transcript"])
-
-        with tab_t:
+        with tab_tasks:
             tasks = result.get("tasks", [])
-            for i, task in enumerate(tasks, 1):
+            if not tasks:
+                st.info("No tasks found.")
+            for i, t in enumerate(tasks, 1):
                 st.markdown(f"""
                     <div class="content-card">
-                        <div style="font-weight:700; font-size:1.1rem; margin-bottom:8px; color:var(--accent-orange);">{i}. {task.get('task', 'Untitled')}</div>
-                        <span class="tag">Owner: {task.get('assigned_to', 'Unassigned')}</span>
-                        <span class="tag">Deadline: {task.get('deadline', 'None')}</span>
-                        <div style="margin-top:10px; font-size:0.9rem;">{task.get('notes', '')}</div>
+                        <div style="font-weight:700; font-size:1.1rem; color:var(--accent-orange); margin-bottom:8px;">{i}. {t.get('task', 'Action Item')}</div>
+                        <span class="tag">Owner: {t.get('assigned_to', 'Unassigned')}</span>
+                        <span class="tag">Due: {t.get('deadline', 'None')}</span>
+                        <div style="margin-top:10px; font-size:0.9rem; color:var(--text-dim);">{t.get('notes', '')}</div>
                     </div>
                 """, unsafe_allow_html=True)
 
-        with tab_s:
+        with tab_sum:
             st.markdown(f"<div class='content-card'>{result.get('summary', 'No summary.')}</div>", unsafe_allow_html=True)
 
-        with tab_r:
+        with tab_risk:
             risks = result.get("risks", [])
             if not risks:
-                st.success("No risks or missing information detected.")
+                st.success("Analysis complete: No risks found.")
             else:
                 for r in risks:
-                    st.markdown(f"<div class='risk-box'>{r}</div>", unsafe_allow_html=True)
+                    st.markdown(f"<div class='risk-alert'>RISK DETECTED: {r}</div>", unsafe_allow_html=True)
 
-        with tab_d:
+        with tab_dec:
             decisions = result.get("decisions", [])
             for d in decisions:
-                st.markdown(f"<div class='content-card'>Confirmed: {d}</div>", unsafe_allow_html=True)
+                st.markdown(f"<div class='content-card'>Decision: {d}</div>", unsafe_allow_html=True)
 
-        with tab_txt:
-            st.text_area("Full Transcript", transcript, height=300)
+        with tab_trans:
+            st.markdown(f"<div style='background:var(--card-bg); padding:1rem; border-radius:8px;'>{transcript}</div>", unsafe_allow_html=True)
 
         st.markdown("---")
-        st.download_button("Export Meeting Data (JSON)", json.dumps(result, indent=2), "meetingmind_export.json")
+        st.download_button("Download Report", json.dumps(result, indent=2), "meetingmind_output.json")
