@@ -6,7 +6,7 @@ import json
 # ── Page config ────────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="MeetingMind · AI Task Extractor",
-    page_icon="🎙️",
+    page_icon="assets/favicon.png",
     layout="wide",
 )
 
@@ -14,186 +14,641 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Plus+Jakarta+Sans:wght@300;400;500;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=DM+Mono:wght@300;400;500&family=Lora:ital,wght@0,400;0,600;1,400&display=swap');
+
+    :root {
+        --bg:          #f5f0e8;
+        --bg-deep:     #ede7d9;
+        --bg-card:     #faf7f2;
+        --ink:         #2c2416;
+        --ink-mid:     #5c4f3a;
+        --ink-soft:    #9a8e78;
+        --gold:        #c8922a;
+        --gold-light:  #e8b84b;
+        --rust:        #b85c38;
+        --sage:        #6b8c6e;
+        --warm-white:  #fffdf8;
+        --border:      #ddd5c0;
+        --shadow:      rgba(44, 36, 22, 0.10);
+    }
+
+    @keyframes fadeUp {
+        from { opacity: 0; transform: translateY(22px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to   { opacity: 1; }
+    }
+    @keyframes spin-slow {
+        from { transform: rotate(0deg); }
+        to   { transform: rotate(360deg); }
+    }
+    @keyframes pulse-ring {
+        0%   { box-shadow: 0 0 0 0 rgba(200, 146, 42, 0.35); }
+        70%  { box-shadow: 0 0 0 14px rgba(200, 146, 42, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(200, 146, 42, 0); }
+    }
+    @keyframes floatBubble {
+        0%, 100% { transform: translateY(0px); }
+        50%       { transform: translateY(-8px); }
+    }
+    @keyframes slideIn {
+        from { opacity: 0; transform: translateX(-18px); }
+        to   { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes scaleIn {
+        from { opacity: 0; transform: scale(0.85); }
+        to   { opacity: 1; transform: scale(1); }
+    }
 
     html, body, [class*="css"] {
-        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-family: 'Lora', serif;
+        background: var(--bg) !important;
+        color: var(--ink);
     }
 
     .stApp {
-        background: linear-gradient(135deg, #fdfcfb 0%, #e2d1f9 100%);
-        color: #2D3436;
+        background: var(--bg) !important;
     }
 
-    /* Logo & Hero Section */
-    .header-container {
+    /* ── Noise texture overlay ── */
+    .stApp::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.035'/%3E%3C/svg%3E");
+        pointer-events: none;
+        z-index: 0;
+        opacity: 0.6;
+    }
+
+    /* ── Decorative circles background ── */
+    .bg-orbs {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 0;
+        overflow: hidden;
+    }
+    .bg-orbs span {
+        position: absolute;
+        border-radius: 50%;
+        border: 1.5px solid var(--border);
+        animation: spin-slow linear infinite;
+    }
+    .bg-orbs span:nth-child(1) { width: 420px; height: 420px; top: -140px; right: -100px; animation-duration: 60s; opacity: 0.5; }
+    .bg-orbs span:nth-child(2) { width: 260px; height: 260px; bottom: 80px; left: -80px; animation-duration: 45s; animation-direction: reverse; opacity: 0.4; }
+    .bg-orbs span:nth-child(3) { width: 180px; height: 180px; top: 40%; left: 55%; animation-duration: 35s; opacity: 0.25; border-style: dashed; }
+
+    /* ── Hero ── */
+    .hero {
+        text-align: center;
+        padding: 3rem 0 1.8rem;
+        animation: fadeUp 0.7s ease both;
+        position: relative;
+        z-index: 1;
+    }
+    .hero-logo {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 72px; height: 72px;
+        border-radius: 50%;
+        background: var(--ink);
+        margin: 0 auto 1.2rem;
+        box-shadow: 0 8px 32px var(--shadow);
+        animation: pulse-ring 2.8s ease-out infinite;
+    }
+    .hero-logo svg {
+        width: 36px; height: 36px;
+    }
+    .hero h1 {
+        font-family: 'Playfair Display', serif;
+        font-size: 3.4rem;
+        font-weight: 900;
+        letter-spacing: -0.03em;
+        color: var(--ink);
+        margin-bottom: 0.3rem;
+        line-height: 1;
+    }
+    .hero h1 span {
+        background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 60%, var(--rust) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    .hero-kicker {
+        font-family: 'DM Mono', monospace;
+        font-size: 0.76rem;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--ink-soft);
+        margin-bottom: 0.9rem;
+    }
+    .hero-sub {
+        color: var(--ink-mid);
+        font-family: 'Lora', serif;
+        font-size: 1rem;
+        max-width: 600px;
+        margin: 0 auto;
+        line-height: 1.75;
+        font-style: italic;
+    }
+
+    /* ── Divider ── */
+    .divider {
+        border: none;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, var(--border) 20%, var(--gold-light) 50%, var(--border) 80%, transparent);
+        margin: 1.6rem 0 2rem;
+        position: relative;
+        z-index: 1;
+    }
+    .divider-dot {
+        text-align: center;
+        margin-top: -10px;
+        position: relative;
+        z-index: 1;
+    }
+    .divider-dot span {
+        display: inline-block;
+        width: 10px; height: 10px;
+        background: var(--gold);
+        border-radius: 50%;
+        margin: 0 3px;
+        animation: floatBubble 2.4s ease-in-out infinite;
+    }
+    .divider-dot span:nth-child(2) { animation-delay: 0.3s; background: var(--gold-light); }
+    .divider-dot span:nth-child(3) { animation-delay: 0.6s; background: var(--rust); }
+
+    /* ── Section label ── */
+    .section-label {
+        font-family: 'DM Mono', monospace;
+        font-size: 0.7rem;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--gold);
+        margin-bottom: 0.8rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        position: relative;
+        z-index: 1;
+    }
+    .section-label::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: var(--border);
+        max-width: 80px;
+    }
+
+    /* ── Upload zone ── */
+    [data-testid="stFileUploader"] {
+        border: 2px dashed var(--border) !important;
+        border-radius: 18px !important;
+        background: var(--bg-card) !important;
+        padding: 1.2rem !important;
+        transition: border-color 0.25s ease, box-shadow 0.25s ease !important;
+        position: relative;
+        z-index: 1;
+    }
+    [data-testid="stFileUploader"]:hover {
+        border-color: var(--gold) !important;
+        box-shadow: 0 0 0 4px rgba(200, 146, 42, 0.08) !important;
+    }
+    [data-testid="stFileUploader"] label {
+        color: var(--ink-mid) !important;
+        font-family: 'DM Mono', monospace !important;
+    }
+
+    /* ── Button ── */
+    div.stButton > button {
+        width: 100%;
+        background: var(--ink);
+        color: var(--warm-white);
+        font-family: 'Playfair Display', serif;
+        font-weight: 700;
+        font-size: 1rem;
+        border: none;
+        border-radius: 50px;
+        padding: 0.9rem 0;
+        letter-spacing: 0.04em;
+        transition: background 0.22s ease, transform 0.15s ease, box-shadow 0.22s ease;
+        position: relative;
+        z-index: 1;
+    }
+    div.stButton > button:hover {
+        background: var(--gold);
+        color: var(--ink);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(200, 146, 42, 0.3);
+    }
+    div.stButton > button:active {
+        transform: translateY(0);
+    }
+
+    /* ── Metric cards ── */
+    [data-testid="stMetric"] {
+        background: var(--bg-card) !important;
+        border: 1.5px solid var(--border) !important;
+        border-radius: 50% !important;
+        aspect-ratio: 1 / 1;
         display: flex;
         flex-direction: column;
         align-items: center;
-        padding: 3rem 0 2rem;
+        justify-content: center;
+        text-align: center !important;
+        padding: 1.2rem !important;
+        box-shadow: 0 4px 20px var(--shadow);
+        animation: scaleIn 0.5s ease both;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    [data-testid="stMetric"]:hover {
+        transform: translateY(-4px) scale(1.03);
+        box-shadow: 0 12px 36px var(--shadow);
+    }
+    [data-testid="stMetric"] [data-testid="stMetricLabel"] {
+        font-family: 'DM Mono', monospace !important;
+        font-size: 0.65rem !important;
+        letter-spacing: 0.14em !important;
+        text-transform: uppercase !important;
+        color: var(--ink-soft) !important;
+    }
+    [data-testid="stMetric"] [data-testid="stMetricValue"] {
+        font-family: 'Playfair Display', serif !important;
+        font-size: 2rem !important;
+        font-weight: 900 !important;
+        color: var(--ink) !important;
     }
 
-    .hero h1 {
-        font-family: 'Outfit', sans-serif;
-        font-size: 3.5rem;
-        font-weight: 800;
-        background: linear-gradient(90deg, #6c5ce7, #a29bfe);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        margin-bottom: 0.5rem;
+    /* ── Tabs ── */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 0.4rem;
+        background: var(--bg-deep) !important;
+        border-radius: 50px;
+        padding: 0.3rem;
+        border: 1px solid var(--border);
+        width: fit-content;
+        position: relative;
+        z-index: 1;
+    }
+    .stTabs [data-baseweb="tab"] {
+        background: transparent !important;
+        border-radius: 50px !important;
+        padding: 0.4rem 1.1rem !important;
+        font-family: 'DM Mono', monospace !important;
+        font-size: 0.75rem !important;
+        letter-spacing: 0.1em !important;
+        text-transform: uppercase !important;
+        color: var(--ink-soft) !important;
+        transition: all 0.2s ease !important;
+    }
+    .stTabs [aria-selected="true"] {
+        background: var(--ink) !important;
+        color: var(--warm-white) !important;
+    }
+    .stTabs [data-baseweb="tab-panel"] {
+        padding-top: 1.4rem;
     }
 
-    .hero p {
-        color: #636e72;
-        font-weight: 500;
-        font-size: 1.1rem;
+    /* ── Transcript box ── */
+    .transcript-box {
+        background: var(--bg-card);
+        border: 1.5px solid var(--border);
+        border-radius: 16px;
+        padding: 1.4rem 1.8rem;
+        font-family: 'DM Mono', monospace;
+        font-size: 0.84rem;
+        line-height: 1.85;
+        color: var(--ink-mid);
+        white-space: pre-wrap;
+        animation: fadeIn 0.5s ease;
+        box-shadow: inset 0 2px 8px rgba(44,36,22,0.04);
+        position: relative;
+        z-index: 1;
+    }
+    .transcript-box::before {
+        content: '"';
+        position: absolute;
+        top: 0.5rem; left: 1rem;
+        font-family: 'Playfair Display', serif;
+        font-size: 4rem;
+        color: var(--border);
+        line-height: 1;
+    }
+
+    /* ── Summary box ── */
+    .summary-box {
+        background: var(--bg-card);
+        border: 1.5px solid var(--border);
+        border-left: 4px solid var(--gold);
+        border-radius: 16px;
+        padding: 1.4rem 1.8rem;
+        font-family: 'Lora', serif;
+        font-size: 1rem;
+        line-height: 1.8;
+        color: var(--ink-mid);
+        font-style: italic;
+        animation: fadeIn 0.5s ease;
+        position: relative;
+        z-index: 1;
+    }
+
+    /* ── Task cards ── */
+    .task-card {
+        background: var(--bg-card);
+        border: 1.5px solid var(--border);
+        border-radius: 20px;
+        padding: 1.2rem 1.4rem;
         margin-bottom: 1rem;
+        animation: slideIn 0.4s ease both;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        position: relative;
+        overflow: hidden;
+        z-index: 1;
+    }
+    .task-card::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0;
+        width: 100%; height: 3px;
+        background: linear-gradient(90deg, var(--gold), var(--gold-light), var(--rust));
+    }
+    .task-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 36px var(--shadow);
     }
 
-    /* Custom Logo SVG */
-    .mind-logo {
-        width: 80px;
-        height: 80px;
-        background: #fff;
-        border-radius: 22px;
-        display: flex;
+    .task-num {
+        display: inline-flex;
         align-items: center;
         justify-content: center;
-        box-shadow: 0 10px 25px rgba(108, 92, 231, 0.15);
-        margin-bottom: 1.5rem;
-    }
-
-    /* Cards & Glassmorphism */
-    [data-testid="stFileUploader"] {
-        border: 2px dashed #a29bfe !important;
-        border-radius: 20px !important;
-        background: rgba(255, 255, 255, 0.6) !important;
-        padding: 1.5rem !important;
-        backdrop-filter: blur(10px);
-    }
-
-    div.stButton > button {
-        width: 100%;
-        background: #6c5ce7;
-        color: white;
-        font-weight: 700;
-        border: none;
-        border-radius: 15px;
-        padding: 1rem 0;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(108, 92, 231, 0.3);
-    }
-
-    div.stButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(108, 92, 231, 0.4);
-        background: #5b4bc4;
-    }
-
-    .section-label {
-        font-family: 'Outfit', sans-serif;
-        font-size: 0.8rem;
-        font-weight: 700;
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
-        color: #6c5ce7;
-        margin-bottom: 1rem;
-        background: rgba(108, 92, 231, 0.1);
-        display: inline-block;
-        padding: 4px 12px;
-        border-radius: 8px;
-    }
-
-    .transcript-box, .summary-box, .panel-box {
-        background: rgba(255, 255, 255, 0.7);
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        border-radius: 20px;
-        padding: 1.5rem;
-        box-shadow: 0 8px 32px rgba(31, 38, 135, 0.05);
-        backdrop-filter: blur(4px);
-    }
-
-    .task-card {
-        background: white;
-        border: 1px solid #f1f2f6;
-        border-left: 6px solid #ffccbc; /* Peach from palette */
-        border-radius: 18px;
-        padding: 1.2rem;
-        margin-bottom: 1rem;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+        width: 28px; height: 28px;
+        border-radius: 50%;
+        background: var(--ink);
+        color: var(--warm-white);
+        font-family: 'DM Mono', monospace;
+        font-size: 0.72rem;
+        font-weight: 500;
+        flex-shrink: 0;
+        margin-right: 0.7rem;
     }
 
     .task-title {
+        display: flex;
+        align-items: center;
+        font-family: 'Playfair Display', serif;
         font-weight: 700;
-        font-size: 1.1rem;
-        color: #2d3436;
+        font-size: 1.02rem;
+        color: var(--ink);
         margin-bottom: 0.8rem;
     }
 
-    .task-chip {
-        font-size: 0.75rem;
-        font-weight: 600;
-        padding: 0.4rem 0.8rem;
-        border-radius: 10px;
-        background: #f8f9fa;
-        color: #636e72;
-        border: 1px solid #eee;
-    }
-    
-    .task-chip span {
-        color: #6c5ce7;
-        margin-left: 0.4rem;
-    }
-
-    /* Metric Overrides */
-    [data-testid="stMetric"] {
-        background: white;
-        border: none;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.04);
-        padding: 1.2rem;
-        border-radius: 20px;
-    }
-
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 10px;
-    }
-
-    .stTabs [data-baseweb="tab"] {
-        background: rgba(255, 255, 255, 0.5);
-        border-radius: 12px;
-        padding: 0.6rem 1.2rem;
-        font-weight: 600;
-        color: #636e72;
-    }
-
-    .stTabs [aria-selected="true"] {
-        background: #6c5ce7 !important;
-        color: white !important;
-    }
-
-    .decision-item {
-        padding: 0.8rem 0;
-        border-bottom: 1px solid #f1f2f6;
-        color: #444;
+    .task-chips {
         display: flex;
-        align-items: center;
-        gap: 12px;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        margin-bottom: 0.6rem;
     }
 
-    .decision-dot {
-        width: 10px;
-        height: 10px;
-        background: #fab1a0; /* Rose from palette */
+    .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        font-family: 'DM Mono', monospace;
+        font-size: 0.72rem;
+        padding: 0.3rem 0.8rem 0.3rem 0.55rem;
+        border-radius: 50px;
+        border: 1px solid var(--border);
+        background: var(--bg-deep);
+        color: var(--ink-mid);
+        transition: background 0.15s ease;
+    }
+    .chip-dot {
+        width: 7px; height: 7px;
         border-radius: 50%;
         flex-shrink: 0;
     }
+    .chip-dot-gold  { background: var(--gold); }
+    .chip-dot-rust  { background: var(--rust); }
+    .chip-dot-sage  { background: var(--sage); }
+    .chip-dot-soft  { background: var(--border); }
+
+    .chip-warn {
+        background: rgba(184,92,56,0.08);
+        border-color: var(--rust);
+        color: var(--rust);
+    }
+    .chip-ok {
+        background: rgba(107,140,110,0.08);
+        border-color: var(--sage);
+        color: var(--sage);
+    }
+
+    .task-notes {
+        color: var(--ink-soft);
+        font-family: 'Lora', serif;
+        font-style: italic;
+        font-size: 0.88rem;
+        line-height: 1.65;
+        margin-top: 0.5rem;
+        padding-top: 0.5rem;
+        border-top: 1px solid var(--border);
+    }
+
+    /* ── Decision circles ── */
+    .decisions-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 1rem;
+        position: relative;
+        z-index: 1;
+    }
+    .decision-circle {
+        aspect-ratio: 1 / 1;
+        border-radius: 50%;
+        background: var(--bg-card);
+        border: 2px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 1.4rem;
+        font-family: 'Lora', serif;
+        font-size: 0.88rem;
+        line-height: 1.55;
+        color: var(--ink-mid);
+        font-style: italic;
+        box-shadow: 0 4px 20px var(--shadow);
+        transition: all 0.25s ease;
+        animation: scaleIn 0.4s ease both;
+        position: relative;
+        overflow: hidden;
+    }
+    .decision-circle::before {
+        content: '';
+        position: absolute;
+        inset: 6px;
+        border-radius: 50%;
+        border: 1px dashed var(--border);
+        pointer-events: none;
+    }
+    .decision-circle:hover {
+        border-color: var(--gold);
+        background: var(--warm-white);
+        transform: scale(1.04) rotate(-1deg);
+        box-shadow: 0 12px 40px var(--shadow);
+    }
+    .decision-circle-inner {
+        position: relative;
+        z-index: 1;
+    }
+    .decision-num {
+        display: block;
+        font-family: 'Playfair Display', serif;
+        font-size: 1.6rem;
+        font-weight: 900;
+        color: var(--gold);
+        font-style: normal;
+        line-height: 1;
+        margin-bottom: 0.4rem;
+    }
+
+    /* ── Risk pills ── */
+    .risk-item {
+        background: rgba(184,92,56,0.06);
+        border: 1.5px solid rgba(184,92,56,0.25);
+        border-radius: 16px;
+        padding: 1rem 1.2rem;
+        display: flex;
+        align-items: flex-start;
+        gap: 0.9rem;
+        margin-bottom: 0.7rem;
+        animation: slideIn 0.4s ease both;
+        transition: transform 0.2s ease;
+        position: relative;
+        z-index: 1;
+    }
+    .risk-item:hover {
+        transform: translateX(4px);
+    }
+    .risk-orb {
+        width: 36px; height: 36px;
+        border-radius: 50%;
+        background: rgba(184,92,56,0.12);
+        border: 1.5px solid rgba(184,92,56,0.3);
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'DM Mono', monospace;
+        font-size: 0.68rem;
+        color: var(--rust);
+        font-weight: 500;
+        animation: floatBubble 2.5s ease-in-out infinite;
+    }
+    .risk-text {
+        font-family: 'Lora', serif;
+        font-size: 0.93rem;
+        line-height: 1.65;
+        color: var(--ink-mid);
+        padding-top: 0.1rem;
+    }
+
+    /* ── Panel box (generic) ── */
+    .panel-box {
+        background: var(--bg-card);
+        border: 1.5px solid var(--border);
+        border-radius: 16px;
+        padding: 1.2rem 1.4rem;
+        position: relative;
+        z-index: 1;
+    }
+
+    /* ── Success / info / warning ── */
+    .stAlert {
+        border-radius: 14px !important;
+        background: var(--bg-card) !important;
+        border-color: var(--border) !important;
+    }
+
+    /* ── Download button ── */
+    [data-testid="stDownloadButton"] button {
+        background: transparent !important;
+        border: 2px solid var(--ink) !important;
+        border-radius: 50px !important;
+        color: var(--ink) !important;
+        font-family: 'DM Mono', monospace !important;
+        font-size: 0.78rem !important;
+        letter-spacing: 0.1em !important;
+        text-transform: uppercase !important;
+        padding: 0.6rem 1.6rem !important;
+        transition: all 0.2s ease !important;
+    }
+    [data-testid="stDownloadButton"] button:hover {
+        background: var(--ink) !important;
+        color: var(--warm-white) !important;
+    }
+
+    /* ── Stagger task cards ── */
+    .task-card:nth-child(1) { animation-delay: 0.05s; }
+    .task-card:nth-child(2) { animation-delay: 0.10s; }
+    .task-card:nth-child(3) { animation-delay: 0.15s; }
+    .task-card:nth-child(4) { animation-delay: 0.20s; }
+    .task-card:nth-child(5) { animation-delay: 0.25s; }
+
+    .decision-circle:nth-child(1) { animation-delay: 0.05s; }
+    .decision-circle:nth-child(2) { animation-delay: 0.12s; }
+    .decision-circle:nth-child(3) { animation-delay: 0.19s; }
+    .decision-circle:nth-child(4) { animation-delay: 0.26s; }
+    .decision-circle:nth-child(5) { animation-delay: 0.33s; }
+
+    /* ── Metric stagger ── */
+    [data-testid="stMetric"]:nth-child(1) { animation-delay: 0.05s; }
+    [data-testid="stMetric"]:nth-child(2) { animation-delay: 0.12s; }
+    [data-testid="stMetric"]:nth-child(3) { animation-delay: 0.19s; }
+    [data-testid="stMetric"]:nth-child(4) { animation-delay: 0.26s; }
+    [data-testid="stMetric"]:nth-child(5) { animation-delay: 0.33s; }
+
+    /* ── Spinner ── */
+    .stSpinner > div {
+        border-top-color: var(--gold) !important;
+    }
+
+    /* ── Audio player ── */
+    audio {
+        border-radius: 50px;
+        filter: sepia(0.2);
+        margin-top: 0.5rem;
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg-deep); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--gold); }
+
+    /* ── Adjust column padding ── */
+    [data-testid="column"] { padding: 0 0.5rem; }
 
     </style>
     """,
     unsafe_allow_html=True,
 )
 
-# ── Helpers (Logic Intact) ──────────────────────────────────────────────────
+# ── Background orbs ────────────────────────────────────────────────────────────
+st.markdown(
+    """
+    <div class="bg-orbs" aria-hidden="true">
+        <span></span><span></span><span></span>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+# ── Helpers ────────────────────────────────────────────────────────────────────
 def load_stt():
     try:
         from stt import transcribe_audio
@@ -214,7 +669,6 @@ def compute_stats(result):
     tasks = result.get("tasks", [])
     decisions = result.get("decisions", [])
     risks = result.get("risks", [])
-
     total_tasks = len(tasks)
     with_deadline = sum(
         1 for t in tasks
@@ -224,26 +678,36 @@ def compute_stats(result):
         1 for t in tasks
         if str(t.get("assigned_to", "Unassigned")).strip() == "Unassigned"
     )
-    total_decisions = len(decisions)
-    total_risks = len(risks)
+    return total_tasks, with_deadline, unassigned, len(decisions), len(risks)
 
-    return total_tasks, with_deadline, unassigned, total_decisions, total_risks
+# ── Microphone SVG logo ────────────────────────────────────────────────────────
+MIC_SVG = """<svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="13" y="4" width="10" height="16" rx="5" fill="#f5f0e8"/>
+  <path d="M7 18a11 11 0 0 0 22 0" stroke="#f5f0e8" stroke-width="2.2" stroke-linecap="round"/>
+  <line x1="18" y1="29" x2="18" y2="34" stroke="#f5f0e8" stroke-width="2.2" stroke-linecap="round"/>
+  <line x1="13" y1="34" x2="23" y2="34" stroke="#f5f0e8" stroke-width="2.2" stroke-linecap="round"/>
+</svg>"""
 
-# ── Hero / Header ─────────────────────────────────────────────────────────────
+# ── Hero ───────────────────────────────────────────────────────────────────────
 st.markdown(
-    """
-    <div class="header-container">
-        <div class="mind-logo">
-            <svg width="45" height="45" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2C6.477 2 2 6.477 2 12C2 17.523 6.477 22 12 22C17.523 22 22 17.523 22 12C22 6.477 17.523 2 12 2ZM13 17H11V15H13V17ZM13 13H11V7H13V13Z" fill="#6c5ce7"/>
-            </svg>
-        </div>
-        <div class="hero">
-            <h1>MeetingMind</h1>
-            <p>Listen · Organize · Execute</p>
+    f"""
+    <div class="hero">
+        <div class="hero-logo">{MIC_SVG}</div>
+        <h1>Meeting<span>Mind</span></h1>
+        <div class="hero-kicker">Upload a recording &middot; Extract tasks &middot; Track execution</div>
+        <div class="hero-sub">
+            Turn raw meeting audio into structured action items, owners,
+            deadlines, decisions, and missing-information risks &mdash; all in one place.
         </div>
     </div>
     """,
+    unsafe_allow_html=True,
+)
+
+st.markdown(
+    """<hr class='divider'><div class='divider-dot'>
+        <span></span><span></span><span></span>
+    </div>""",
     unsafe_allow_html=True,
 )
 
@@ -251,21 +715,20 @@ st.markdown(
 left, right = st.columns([2, 1])
 
 with left:
-    st.markdown("<div class='section-label'>01 Upload Audio</div>", unsafe_allow_html=True)
+    st.markdown("<div class='section-label'>01 &mdash; Upload Recording</div>", unsafe_allow_html=True)
     uploaded_file = st.file_uploader(
         label="Drop your meeting audio here",
         type=["mp3", "wav", "m4a"],
         label_visibility="collapsed",
     )
-
     if uploaded_file:
         st.audio(uploaded_file, format=f"audio/{uploaded_file.name.split('.')[-1]}")
 
 with right:
-    st.markdown("<div class='section-label'>02 Intelligence</div>", unsafe_allow_html=True)
-    process_clicked = st.button("Analyze Recording")
+    st.markdown("<div class='section-label'>02 &mdash; Process</div>", unsafe_allow_html=True)
+    process_clicked = st.button("Process Meeting")
 
-# ── Processing logic (Logic Intact) ───────────────────────────────────────────
+# ── Processing logic ───────────────────────────────────────────────────────────
 if process_clicked:
     if not uploaded_file:
         st.warning("Please upload an audio file before processing.")
@@ -280,7 +743,7 @@ if process_clicked:
     if transcribe_audio is None:
         st.stop()
 
-    with st.spinner("Decoding audio waves..."):
+    with st.spinner("Transcribing audio..."):
         try:
             transcript = transcribe_audio(tmp_path)
             if not transcript or not isinstance(transcript, str):
@@ -293,7 +756,7 @@ if process_clicked:
     if extract_tasks is None:
         st.stop()
 
-    with st.spinner("Extracting action items..."):
+    with st.spinner("Extracting tasks with AI..."):
         try:
             result = extract_tasks(transcript)
             if not isinstance(result, dict):
@@ -307,12 +770,17 @@ if process_clicked:
     except OSError:
         pass
 
-    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown(
+        """<hr class='divider'><div class='divider-dot'>
+            <span></span><span></span><span></span>
+        </div>""",
+        unsafe_allow_html=True,
+    )
 
     # ── Metrics ───────────────────────────────────────────────────────────────
     total_tasks, with_deadline, unassigned, total_decisions, total_risks = compute_stats(result)
 
-    st.markdown("<div class='section-label'>03 Overview</div>", unsafe_allow_html=True)
+    st.markdown("<div class='section-label'>03 &mdash; Dashboard Snapshot</div>", unsafe_allow_html=True)
     c1, c2, c3, c4, c5 = st.columns(5)
     c1.metric("Tasks", total_tasks)
     c2.metric("Deadlines", with_deadline)
@@ -322,10 +790,10 @@ if process_clicked:
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    tasks = result.get("tasks", [])
-    summary = result.get("summary", "")
-    decisions = result.get("decisions", [])
-    risks = result.get("risks", [])
+    tasks      = result.get("tasks",     [])
+    summary    = result.get("summary",   "")
+    decisions  = result.get("decisions", [])
+    risks      = result.get("risks",     [])
 
     # ── Tabs ──────────────────────────────────────────────────────────────────
     tab1, tab2, tab3, tab4, tab5 = st.tabs(
@@ -333,85 +801,115 @@ if process_clicked:
     )
 
     with tab1:
-        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("<div class='section-label'>Full Transcript</div>", unsafe_allow_html=True)
         st.markdown(
             f"<div class='transcript-box'>{transcript}</div>",
             unsafe_allow_html=True,
         )
 
     with tab2:
-        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("<div class='section-label'>Extracted Tasks</div>", unsafe_allow_html=True)
         if not tasks:
             st.info("No tasks were extracted from this meeting.")
         else:
             for i, task in enumerate(tasks, 1):
                 task_name = task.get("task", task.get("title", f"Task {i}"))
-                assignee = task.get("assigned_to", task.get("assignee", "")) or "Unassigned"
-                deadline = task.get("deadline", task.get("due_date", "")) or "No deadline"
-                priority = task.get("priority", "Medium")
-                notes = task.get("notes", "")
+                assignee  = task.get("assigned_to", task.get("assignee", "")) or "Unassigned"
+                deadline  = task.get("deadline", task.get("due_date", "")) or "No deadline"
+                priority  = task.get("priority", "Medium")
+                notes     = task.get("notes", "")
 
                 missing = []
                 if assignee == "Unassigned":
                     missing.append("Owner missing")
                 if deadline in ["", "No deadline", "Not specified"]:
                     missing.append("Deadline missing")
+                missing_text = " &middot; ".join(missing) if missing else "Complete"
+                chip_cls     = "chip-warn" if missing else "chip-ok"
 
-                missing_text = " • ".join(missing) if missing else "Complete"
+                priority_dot = {
+                    "High":   "chip-dot-rust",
+                    "Medium": "chip-dot-gold",
+                    "Low":    "chip-dot-sage",
+                }.get(priority, "chip-dot-soft")
 
                 st.markdown(
                     f"""
                     <div class="task-card">
-                        <div class="task-title">{i}. {task_name}</div>
-                        <div class="task-meta">
-                            <div class="task-chip">Owner<span>{assignee}</span></div>
-                            <div class="task-chip">Due<span>{deadline}</span></div>
-                            <div class="task-chip">Status<span>{priority}</span></div>
-                            <div class="task-chip">Health<span>{missing_text}</span></div>
+                        <div class="task-title">
+                            <span class="task-num">{i:02d}</span>
+                            {task_name}
                         </div>
-                        {"<div class='task-notes' style='margin-top:1rem; font-size:0.9rem; color:#636e72;'>" + notes + "</div>" if notes else ""}
+                        <div class="task-chips">
+                            <div class="chip">
+                                <span class="chip-dot chip-dot-gold"></span>
+                                {assignee}
+                            </div>
+                            <div class="chip">
+                                <span class="chip-dot chip-dot-soft"></span>
+                                {deadline}
+                            </div>
+                            <div class="chip">
+                                <span class="chip-dot {priority_dot}"></span>
+                                {priority}
+                            </div>
+                            <div class="chip {chip_cls}">
+                                {missing_text}
+                            </div>
+                        </div>
+                        {"<div class='task-notes'>" + notes + "</div>" if notes else ""}
                     </div>
                     """,
                     unsafe_allow_html=True,
                 )
 
     with tab3:
-        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("<div class='section-label'>Meeting Summary</div>", unsafe_allow_html=True)
         if summary:
             st.markdown(f"<div class='summary-box'>{summary}</div>", unsafe_allow_html=True)
         else:
             st.info("No summary available.")
 
     with tab4:
-        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("<div class='section-label'>Decisions Made</div>", unsafe_allow_html=True)
         if not decisions:
             st.info("No decisions were recorded.")
         else:
-            items_html = "".join(
-                f"<div class='decision-item'><div class='decision-dot'></div><div>{d}</div></div>"
-                for d in decisions
-            )
-            st.markdown(
-                f"<div class='panel-box'>{items_html}</div>",
-                unsafe_allow_html=True,
-            )
+            circles_html = "<div class='decisions-grid'>"
+            for idx, d in enumerate(decisions, 1):
+                circles_html += f"""
+                <div class="decision-circle" style="animation-delay:{(idx-1)*0.08:.2f}s">
+                    <div class="decision-circle-inner">
+                        <span class="decision-num">{idx:02d}</span>
+                        {d}
+                    </div>
+                </div>"""
+            circles_html += "</div>"
+            st.markdown(circles_html, unsafe_allow_html=True)
 
     with tab5:
-        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("<div class='section-label'>Risks &amp; Missing Info</div>", unsafe_allow_html=True)
         if not risks:
-            st.success("Analysis complete: No risks detected.")
+            st.success("No major risks detected.")
         else:
-            for risk in risks:
-                st.warning(risk)
+            risks_html = ""
+            for i, risk in enumerate(risks, 1):
+                risks_html += f"""
+                <div class="risk-item" style="animation-delay:{(i-1)*0.07:.2f}s">
+                    <div class="risk-orb">R{i:02d}</div>
+                    <div class="risk-text">{risk}</div>
+                </div>"""
+            st.markdown(risks_html, unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
 
     # ── Download JSON ─────────────────────────────────────────────────────────
     st.download_button(
-        label="Download Insights JSON",
+        label="Download JSON Output",
         data=json.dumps(result, indent=2),
         file_name="meeting_output.json",
         mime="application/json",
     )
 
-    st.success("Analysis complete.")
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.success("Meeting processed successfully.")
