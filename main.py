@@ -2,188 +2,185 @@ import streamlit as st
 import os
 import tempfile
 import json
+import matplotlib.pyplot as plt
 
 # ── Page config ────────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="MeetingMind · AI Task Extractor",
-    page_icon="🧠",
+    page_title="MeetingMind | AI Task Extractor",
     layout="wide",
 )
 
-# ── Custom CSS & Theme ─────────────────────────────────────────────────────────
+# ── Custom CSS ─────────────────────────────────────────────────────────────────
 st.markdown(
     """
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Outfit:wght@300;400;600;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Lexend:wght@300;400;600;800&display=swap');
 
     :root {
-        --bg-light: #FFFDF1;
+        --bg-dark: #4D2D00;
+        --card-bg: #5D3A0A;
         --accent-peach: #FFCC99;
         --accent-orange: #FF9955;
-        --accent-brown: #4D2D00;
-        --text-dark: #4D2D00;
-        --shadow: rgba(77, 45, 0, 0.1);
+        --text-light: #FFFDF1;
+        --text-dim: #FFCC99;
     }
 
+    /* Global Overrides for Contrast */
     html, body, [class*="css"] {
-        font-family: 'Quicksand', sans-serif;
-        color: var(--text-dark);
+        font-family: 'Lexend', sans-serif;
+        color: var(--text-light) !important;
     }
 
     .stApp {
-        background-color: var(--bg-light);
-        background-image: radial-gradient(circle at 20% 20%, #ffcc9933 0%, transparent 20%),
-                          radial-gradient(circle at 80% 80%, #ff995522 0%, transparent 25%);
+        background-color: var(--bg-dark);
     }
 
-    /* --- Logo & Header --- */
-    .logo-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding-top: 2rem;
+    /* --- Logo Section --- */
+    .header-box {
+        text-align: center;
+        padding: 2rem 0;
     }
-    
-    .cute-logo {
-        width: 80px;
-        height: 80px;
+
+    .logo-shape {
+        width: 60px;
+        height: 60px;
         background: var(--accent-orange);
-        border-radius: 20px;
-        position: relative;
+        margin: 0 auto 1rem;
+        border-radius: 15px;
         display: flex;
         align-items: center;
         justify-content: center;
-        box-shadow: 0 10px 20px var(--shadow);
-        animation: float 3s ease-in-out infinite;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.3);
     }
 
-    @keyframes float {
-        0% { transform: translateY(0px); }
-        50% { transform: translateY(-10px); }
-        100% { transform: translateY(0px); }
+    .logo-inner {
+        width: 30px;
+        height: 30px;
+        border: 4px solid var(--bg-dark);
+        border-radius: 50%;
     }
 
     .hero h1 {
-        font-family: 'Outfit', sans-serif;
-        font-size: 3.5rem;
+        font-size: 3rem;
         font-weight: 800;
-        color: var(--accent-brown);
-        margin-top: 1rem;
-        margin-bottom: 0;
+        color: var(--accent-orange);
+        margin: 0;
+        letter-spacing: -1px;
     }
 
     .hero p {
-        font-size: 1.1rem;
-        color: var(--accent-orange);
-        font-weight: 500;
+        font-size: 1rem;
+        color: var(--accent-peach);
+        margin-top: 0.5rem;
     }
 
-    /* --- Circular Dashboard Cards --- */
-    .stat-circle-container {
+    /* --- Neumorphic Stat Circles --- */
+    .stat-row {
         display: flex;
-        justify-content: space-around;
+        justify-content: center;
+        gap: 25px;
         flex-wrap: wrap;
-        gap: 20px;
         margin: 2rem 0;
     }
 
-    .stat-card {
-        background: white;
-        width: 150px;
-        height: 150px;
+    .stat-circle {
+        background: var(--card-bg);
+        width: 130px;
+        height: 130px;
         border-radius: 50%;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        box-shadow: 10px 10px 20px #e6e4d9, -10px -10px 20px #ffffff;
-        transition: all 0.3s ease;
-        border: 4px solid var(--bg-light);
+        box-shadow: 10px 10px 20px #3d2400, -5px -5px 15px #5d3600;
+        border: 2px solid var(--accent-orange);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
 
-    .stat-card:hover {
-        transform: scale(1.1) rotate(5deg);
-        box-shadow: 0 15px 30px var(--shadow);
+    .stat-circle:hover {
+        transform: scale(1.05);
+        box-shadow: 0 15px 30px rgba(0,0,0,0.4);
     }
 
     .stat-val {
         font-size: 1.8rem;
         font-weight: 800;
-        color: var(--accent-brown);
+        color: var(--text-light);
     }
 
     .stat-label {
-        font-size: 0.8rem;
+        font-size: 0.7rem;
         text-transform: uppercase;
         letter-spacing: 1px;
-        color: var(--accent-orange);
-        font-weight: 700;
+        color: var(--accent-peach);
     }
 
-    /* --- UI Components --- */
+    /* --- Form & UI Elements --- */
     [data-testid="stFileUploader"] {
-        background-color: white !important;
-        border: 3px dashed var(--accent-peach) !important;
-        border-radius: 25px !important;
-        padding: 2rem !important;
+        background-color: var(--card-bg) !important;
+        border: 2px dashed var(--accent-orange) !important;
+        border-radius: 12px !important;
     }
 
     div.stButton > button {
-        background: var(--accent-brown);
-        color: white;
-        border-radius: 50px;
-        padding: 0.75rem 2rem;
-        font-weight: 700;
+        background: var(--accent-orange);
+        color: var(--bg-dark);
         border: none;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 15px var(--shadow);
+        border-radius: 8px;
+        font-weight: 700;
+        padding: 0.6rem 2rem;
+        transition: 0.2s;
     }
 
     div.stButton > button:hover {
-        background: var(--accent-orange);
+        background: var(--accent-peach);
         transform: translateY(-2px);
-        box-shadow: 0 6px 20px var(--shadow);
     }
 
-    .task-card {
-        background: white;
-        border-radius: 20px;
+    /* --- Cards --- */
+    .content-card {
+        background: var(--card-bg);
         padding: 1.5rem;
-        margin-bottom: 1rem;
-        border-left: 8px solid var(--accent-orange);
-        box-shadow: 5px 5px 15px var(--shadow);
-    }
-
-    .task-chip {
-        background: var(--bg-light);
-        color: var(--accent-brown);
-        padding: 5px 12px;
         border-radius: 12px;
-        font-size: 0.8rem;
-        font-weight: 600;
+        border-left: 6px solid var(--accent-orange);
+        margin-bottom: 1rem;
+        box-shadow: 4px 4px 15px rgba(0,0,0,0.2);
+    }
+
+    .tag {
         display: inline-block;
-        margin-right: 5px;
-        border: 1px solid var(--accent-peach);
-    }
-
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 10px;
-        background: transparent;
-    }
-
-    .stTabs [data-baseweb="tab"] {
-        background: white;
-        border-radius: 15px 15px 0 0;
-        padding: 10px 20px;
-        color: var(--accent-brown);
+        background: var(--bg-dark);
+        color: var(--accent-peach);
+        padding: 3px 10px;
+        border-radius: 5px;
+        font-size: 0.8rem;
+        border: 1px solid var(--accent-orange);
+        margin-right: 8px;
         font-weight: 600;
     }
 
-    .stTabs [aria-selected="true"] {
-        background: var(--accent-peach) !important;
+    .risk-box {
+        background: #6b2114;
+        border: 1px solid #ff5a3d;
+        color: #fff;
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 0.5rem;
     }
 
+    /* --- Tabs --- */
+    .stTabs [data-baseweb="tab-list"] { background: transparent; }
+    .stTabs [data-baseweb="tab"] {
+        background: var(--card-bg);
+        color: var(--text-dim);
+        border-radius: 8px 8px 0 0;
+        padding: 10px 20px;
+        margin-right: 4px;
+    }
+    .stTabs [aria-selected="true"] {
+        background: var(--accent-orange) !important;
+        color: var(--bg-dark) !important;
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -195,7 +192,7 @@ def load_stt():
         from stt import transcribe_audio
         return transcribe_audio
     except ImportError:
-        st.error("Could not import `transcribe_audio` from `stt.py`.")
+        st.error("Could not import transcribe_audio from stt.py")
         return None
 
 def load_llm():
@@ -203,33 +200,25 @@ def load_llm():
         from llm import extract_tasks
         return extract_tasks
     except ImportError:
-        st.error("Could not import `extract_tasks` from `llm.py`.")
+        st.error("Could not import extract_tasks from llm.py")
         return None
 
 def compute_stats(result):
     tasks = result.get("tasks", [])
-    decisions = result.get("decisions", [])
-    risks = result.get("risks", [])
-
-    total_tasks = len(tasks)
+    total = len(tasks)
     with_deadline = sum(1 for t in tasks if str(t.get("deadline", "")).strip() not in ["", "Not specified", "No deadline"])
     unassigned = sum(1 for t in tasks if str(t.get("assigned_to", "Unassigned")).strip() == "Unassigned")
-    return total_tasks, with_deadline, unassigned, len(decisions), len(risks)
+    assigned = total - unassigned
+    return total, with_deadline, unassigned, assigned, len(result.get("decisions", [])), len(result.get("risks", []))
 
-# ── Header / Logo ──────────────────────────────────────────────────────────────
+# ── Header ─────────────────────────────────────────────────────────────────────
 st.markdown(
     """
-    <div class="logo-container">
-        <div class="cute-logo">
-            <svg width="50" height="50" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM13 17H11V15H13V17ZM13 13H11V7H13V13Z" fill="white"/>
-                <circle cx="9" cy="10" r="1" fill="#4D2D00"/>
-                <circle cx="15" cy="10" r="1" fill="#4D2D00"/>
-            </svg>
-        </div>
+    <div class="header-box">
+        <div class="logo-shape"><div class="logo-inner"></div></div>
         <div class="hero">
             <h1>MeetingMind</h1>
-            <p>Magic notes for busy brains ✨</p>
+            <p>Intelligent meeting synthesis and task tracking</p>
         </div>
     </div>
     """,
@@ -237,27 +226,19 @@ st.markdown(
 )
 
 # ── Input area ─────────────────────────────────────────────────────────────────
-col1, col2 = st.columns([2, 1])
+c_upload, c_btn = st.columns([3, 1])
 
-with col1:
-    st.markdown("### 📥 Drop your recording")
-    uploaded_file = st.file_uploader(
-        label="Upload audio",
-        type=["mp3", "wav", "m4a"],
-        label_visibility="collapsed",
-    )
-    if uploaded_file:
-        st.audio(uploaded_file)
+with c_upload:
+    uploaded_file = st.file_uploader(label="Upload meeting recording", type=["mp3", "wav", "m4a"], label_visibility="collapsed")
 
-with col2:
-    st.markdown("### ⚡ Action")
-    st.write("Ready to transform your talk?")
-    process_clicked = st.button("Start AI Magic")
+with c_btn:
+    st.write("") # Spacing
+    process_clicked = st.button("Extract Intelligence")
 
 # ── Processing logic ───────────────────────────────────────────────────────────
 if process_clicked:
     if not uploaded_file:
-        st.warning("Oops! Please upload an audio file first.")
+        st.warning("Please select an audio file to continue.")
         st.stop()
 
     suffix = os.path.splitext(uploaded_file.name)[-1]
@@ -265,65 +246,86 @@ if process_clicked:
         tmp.write(uploaded_file.read())
         tmp_path = tmp.name
 
-    transcribe_audio = load_stt()
-    extract_tasks = load_llm()
+    stt = load_stt()
+    llm = load_llm()
 
-    if transcribe_audio and extract_tasks:
-        with st.spinner("🧠 Listening closely to your meeting..."):
-            transcript = transcribe_audio(tmp_path)
-        
-        with st.spinner("✨ Organizing tasks and decisions..."):
-            result = extract_tasks(transcript)
+    if stt and llm:
+        with st.spinner("Analyzing audio..."):
+            transcript = stt(tmp_path)
+        with st.spinner("Synthesizing insights..."):
+            result = llm(transcript)
 
-        # Cleanup
         try: os.unlink(tmp_path)
         except: pass
 
-        # ── Dashboard Circular Metrics ──
-        t, d, u, dec, r = compute_stats(result)
-        
+        # ── Dashboard ──
+        t_count, d_count, u_count, a_count, dec_count, r_count = compute_stats(result)
+
         st.markdown(f"""
-            <div class="stat-circle-container">
-                <div class="stat-card"><div class="stat-val">{t}</div><div class="stat-label">Tasks</div></div>
-                <div class="stat-card" style="border-color: #FFCC99"><div class="stat-val">{d}</div><div class="stat-label">Deadlines</div></div>
-                <div class="stat-card" style="border-color: #FF9955"><div class="stat-val">{u}</div><div class="stat-label">Missing</div></div>
-                <div class="stat-card" style="border-color: #4D2D00"><div class="stat-val">{dec}</div><div class="stat-label">Decisions</div></div>
-                <div class="stat-card"><div class="stat-val">{r}</div><div class="stat-label">Risks</div></div>
+            <div class="stat-row">
+                <div class="stat-circle"><div class="stat-val">{t_count}</div><div class="stat-label">Tasks</div></div>
+                <div class="stat-circle"><div class="stat-val">{dec_count}</div><div class="stat-label">Decisions</div></div>
+                <div class="stat-circle"><div class="stat-val">{r_count}</div><div class="stat-label">Risks</div></div>
             </div>
         """, unsafe_allow_html=True)
 
-        # ── Result Tabs ──
-        tab1, tab2, tab3, tab4 = st.tabs(["📝 Tasks", "📖 Summary", "🤝 Decisions", "📄 Transcript"])
-
-        with tab1:
-            tasks = result.get("tasks", [])
-            if not tasks:
-                st.info("Everything looks clear! No specific tasks found.")
+        # ── Chart and Details ──
+        col_chart, col_empty = st.columns([1, 1])
+        with col_chart:
+            st.markdown("### Task Assignment Status")
+            if t_count > 0:
+                fig, ax = plt.subplots(figsize=(4, 4))
+                fig.patch.set_facecolor('#4D2D00')
+                ax.set_facecolor('#4D2D00')
+                
+                labels = ['Assigned', 'Unassigned']
+                sizes = [a_count, u_count]
+                colors = ['#FF9955', '#FFCC99']
+                
+                wedges, texts, autotexts = ax.pie(
+                    sizes, labels=labels, autopct='%1.1f%%', 
+                    startangle=140, colors=colors, 
+                    textprops={'color': "#FFFDF1", 'weight': 'bold'}
+                )
+                plt.setp(autotexts, size=10, weight="bold")
+                plt.tight_layout()
+                st.pyplot(fig)
             else:
-                for i, task in enumerate(tasks, 1):
-                    task_name = task.get("task", task.get("title", f"Task {i}"))
-                    assignee = task.get("assigned_to", "Unassigned")
-                    deadline = task.get("deadline", "No deadline")
-                    st.markdown(f"""
-                        <div class="task-card">
-                            <h4 style="margin-top:0; color:#4D2D00;">{task_name}</h4>
-                            <span class="task-chip">👤 {assignee}</span>
-                            <span class="task-chip">📅 {deadline}</span>
-                            <p style="margin-top:10px; font-size:0.9rem; color:#666;">{task.get('notes', '')}</p>
-                        </div>
-                    """, unsafe_allow_html=True)
+                st.write("No tasks found to chart.")
 
-        with tab2:
-            st.markdown(f"<div style='background:white; padding:2rem; border-radius:20px;'>{result.get('summary', 'No summary generated.')}</div>", unsafe_allow_html=True)
+        # ── Tabs ──
+        tab_t, tab_s, tab_r, tab_d, tab_txt = st.tabs(["Tasks", "Summary", "Risks", "Decisions", "Transcript"])
 
-        with tab3:
+        with tab_t:
+            tasks = result.get("tasks", [])
+            for i, task in enumerate(tasks, 1):
+                st.markdown(f"""
+                    <div class="content-card">
+                        <div style="font-weight:700; font-size:1.1rem; margin-bottom:8px; color:var(--accent-orange);">{i}. {task.get('task', 'Untitled')}</div>
+                        <span class="tag">Owner: {task.get('assigned_to', 'Unassigned')}</span>
+                        <span class="tag">Deadline: {task.get('deadline', 'None')}</span>
+                        <div style="margin-top:10px; font-size:0.9rem;">{task.get('notes', '')}</div>
+                    </div>
+                """, unsafe_allow_html=True)
+
+        with tab_s:
+            st.markdown(f"<div class='content-card'>{result.get('summary', 'No summary.')}</div>", unsafe_allow_html=True)
+
+        with tab_r:
+            risks = result.get("risks", [])
+            if not risks:
+                st.success("No risks or missing information detected.")
+            else:
+                for r in risks:
+                    st.markdown(f"<div class='risk-box'>{r}</div>", unsafe_allow_html=True)
+
+        with tab_d:
             decisions = result.get("decisions", [])
-            for dec in decisions:
-                st.markdown(f"✅ **{dec}**")
+            for d in decisions:
+                st.markdown(f"<div class='content-card'>Confirmed: {d}</div>", unsafe_allow_html=True)
 
-        with tab4:
+        with tab_txt:
             st.text_area("Full Transcript", transcript, height=300)
 
         st.markdown("---")
-        st.download_button("⬇️ Export Results", json.dumps(result, indent=2), "meetingmind_report.json")
-        st.success("All done! Your meeting has been Mind-ed. 🧠✨")
+        st.download_button("Export Meeting Data (JSON)", json.dumps(result, indent=2), "meetingmind_export.json")
