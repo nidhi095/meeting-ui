@@ -2,9 +2,7 @@ import streamlit as st
 import os
 import tempfile
 import json
-import subprocess
-import math
-import shutil
+from pydub import AudioSegment
 
 # ── Page config ────────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -212,7 +210,22 @@ st.markdown(
         position: relative;
         z-index: 1;
     }
-    .divider-dot { display: none; }
+    .divider-dot {
+        text-align: center;
+        margin-top: -10px;
+        position: relative;
+        z-index: 1;
+    }
+    .divider-dot span {
+        display: inline-block;
+        width: 10px; height: 10px;
+        background: var(--gold);
+        border-radius: 50%;
+        margin: 0 3px;
+        animation: floatBubble 2.4s ease-in-out infinite;
+    }
+    .divider-dot span:nth-child(2) { animation-delay: 0.3s; background: var(--gold-light); }
+    .divider-dot span:nth-child(3) { animation-delay: 0.6s; background: var(--rust); }
 
     .section-label {
         font-family: 'DM Mono', monospace;
@@ -374,8 +387,8 @@ st.markdown(
         transition: all 0.2s ease !important;
     }
     .stTabs [aria-selected="true"] {
-        background: var(--gold) !important;
-        color: var(--ink) !important;
+        background: var(--ink) !important;
+        color: var(--warm-white) !important;
     }
     .stTabs [data-baseweb="tab-panel"] {
         padding-top: 1.4rem;
@@ -671,9 +684,6 @@ st.markdown(
         margin-top: 0.5rem;
     }
 
-    [data-testid="stFileUploaderDropzoneInstructions"] svg {
-        display: none !important;
-    }
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: var(--bg-deep); }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
@@ -716,6 +726,7 @@ def compute_stats(result):
     tasks = result.get("tasks", [])
     decisions = result.get("decisions", [])
     risks = result.get("risks", [])
+
     total_tasks = len(tasks)
     with_deadline = sum(
         1 for t in tasks
@@ -727,53 +738,23 @@ def compute_stats(result):
     )
     return total_tasks, with_deadline, unassigned, len(decisions), len(risks)
 
-def get_audio_duration(file_path):
-    cmd = [
-        "ffprobe",
-        "-v", "error",
-        "-show_entries", "format=duration",
-        "-of", "default=noprint_wrappers=1:nokey=1",
-        file_path
-    ]
-    result = subprocess.run(cmd, capture_output=True, text=True)
-    if result.returncode != 0:
-        raise RuntimeError(f"Could not read audio duration: {result.stderr}")
-    return float(result.stdout.strip())
-
-def split_audio(file_path, chunk_length_sec=120):
+def split_audio(file_path, chunk_length_ms=5 * 60 * 1000):
     """
-    Split audio into 2-minute chunks using ffmpeg.
-    Returns (chunk_paths, chunk_dir)
+    Splits long audio into 5-minute chunks.
+    Returns list of chunk file paths.
     """
-    duration = get_audio_duration(file_path)
-    total_chunks = math.ceil(duration / chunk_length_sec)
+    audio = AudioSegment.from_file(file_path)
+    chunks = []
 
-    chunk_dir = tempfile.mkdtemp(prefix="meetingmind_chunks_")
-    chunk_paths = []
+    base_dir = tempfile.mkdtemp(prefix="meetingmind_chunks_")
 
-    for i in range(total_chunks):
-        start_time = i * chunk_length_sec
-        chunk_path = os.path.join(chunk_dir, f"chunk_{i + 1}.wav")
+    for i in range(0, len(audio), chunk_length_ms):
+        chunk = audio[i:i + chunk_length_ms]
+        chunk_path = os.path.join(base_dir, f"chunk_{i // chunk_length_ms + 1}.wav")
+        chunk.export(chunk_path, format="wav")
+        chunks.append(chunk_path)
 
-        cmd = [
-            "ffmpeg",
-            "-y",
-            "-i", file_path,
-            "-ss", str(start_time),
-            "-t", str(chunk_length_sec),
-            "-ar", "16000",
-            "-ac", "1",
-            chunk_path
-        ]
-
-        result = subprocess.run(cmd, capture_output=True, text=True)
-        if result.returncode != 0:
-            raise RuntimeError(f"ffmpeg failed on chunk {i + 1}: {result.stderr}")
-
-        if os.path.exists(chunk_path):
-            chunk_paths.append(chunk_path)
-
-    return chunk_paths, chunk_dir
+    return chunks, base_dir
 
 def merge_chunk_results(results):
     merged = {
@@ -818,16 +799,17 @@ def merge_chunk_results(results):
     merged["summary"] = " ".join(summary_parts).strip() if summary_parts else "No summary generated."
     return merged
 
-def cleanup_temp_files(tmp_path=None, chunk_dir=None):
-    if tmp_path and os.path.exists(tmp_path):
+def cleanup_files(paths):
+    for path in paths:
         try:
-            os.remove(tmp_path)
-        except Exception:
-            pass
-
-    if chunk_dir and os.path.exists(chunk_dir):
-        try:
-            shutil.rmtree(chunk_dir, ignore_errors=True)
+            if os.path.isdir(path):
+                for fname in os.listdir(path):
+                    fpath = os.path.join(path, fname)
+                    if os.path.isfile(fpath):
+                        os.remove(fpath)
+                os.rmdir(path)
+            elif os.path.isfile(path):
+                os.remove(path)
         except Exception:
             pass
 
@@ -886,45 +868,46 @@ if process_clicked:
         st.stop()
 
     suffix = os.path.splitext(uploaded_file.name)[-1]
-    tmp_path = None
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+        tmp.write(uploaded_file.read())
+        tmp_path = tmp.name
+
+    transcribe_audio = load_stt()
+    if transcribe_audio is None:
+        cleanup_files([tmp_path])
+        st.stop()
+
+    extract_tasks = load_llm()
+    if extract_tasks is None:
+        cleanup_files([tmp_path])
+        st.stop()
+
+    chunk_paths = []
     chunk_dir = None
+    transcript = ""
+    result = {}
 
     try:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-            tmp.write(uploaded_file.read())
-            tmp_path = tmp.name
-
-        transcribe_audio = load_stt()
-        if transcribe_audio is None:
-            st.stop()
-
-        extract_tasks = load_llm()
-        if extract_tasks is None:
-            st.stop()
-
-        with st.spinner("Preparing audio chunks..."):
-            chunk_paths, chunk_dir = split_audio(tmp_path, chunk_length_sec=120)
+        with st.spinner("Splitting long audio into chunks..."):
+            chunk_paths, chunk_dir = split_audio(tmp_path, chunk_length_ms=5 * 60 * 1000)
 
         if not chunk_paths:
-            raise ValueError("No audio chunks were created.")
+            raise ValueError("Could not split audio into chunks.")
 
-        st.info(f"Audio split into {len(chunk_paths)} chunk(s). Processing may take some time.")
+        st.info(f"Processing {len(chunk_paths)} audio chunk(s). This may take some time for longer recordings.")
 
-        progress_bar = st.progress(0)
-        status_text = st.empty()
-
-        transcript_parts = []
         chunk_results = []
+        transcript_parts = []
+
+        progress_bar = st.progress(0, text="Starting processing...")
 
         for idx, chunk_path in enumerate(chunk_paths, start=1):
-            status_text.info(f"Processing chunk {idx} of {len(chunk_paths)}...")
+            progress_text = f"Processing chunk {idx} of {len(chunk_paths)}..."
+            progress_bar.progress((idx - 1) / len(chunk_paths), text=progress_text)
 
             chunk_transcript = transcribe_audio(chunk_path)
             if not chunk_transcript or not isinstance(chunk_transcript, str):
                 raise ValueError(f"Chunk {idx} transcription returned empty or invalid result.")
-
-            if chunk_transcript.startswith("Error:"):
-                raise ValueError(f"Chunk {idx} transcription failed: {chunk_transcript}")
 
             transcript_parts.append(chunk_transcript)
 
@@ -934,19 +917,17 @@ if process_clicked:
 
             chunk_results.append(chunk_result)
 
-            progress_bar.progress(idx / len(chunk_paths))
+        progress_bar.progress(1.0, text="Processing complete.")
 
         transcript = "\n\n".join(transcript_parts).strip()
         result = merge_chunk_results(chunk_results)
 
-        status_text.success("Processing complete.")
-
     except Exception as e:
-        cleanup_temp_files(tmp_path, chunk_dir)
+        cleanup_files([tmp_path] + chunk_paths + ([chunk_dir] if chunk_dir else []))
         st.error(f"Processing failed: {e}")
         st.stop()
 
-    cleanup_temp_files(tmp_path, chunk_dir)
+    cleanup_files([tmp_path] + chunk_paths + ([chunk_dir] if chunk_dir else []))
 
     st.markdown(
         """<hr class='divider'><div class='divider-dot'>
@@ -968,10 +949,10 @@ if process_clicked:
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    tasks      = result.get("tasks",     [])
-    summary    = result.get("summary",   "")
-    decisions  = result.get("decisions", [])
-    risks      = result.get("risks",     [])
+    tasks = result.get("tasks", [])
+    summary = result.get("summary", "")
+    decisions = result.get("decisions", [])
+    risks = result.get("risks", [])
 
     # ── Tabs ──────────────────────────────────────────────────────────────────
     tab1, tab2, tab3, tab4, tab5 = st.tabs(
@@ -992,10 +973,10 @@ if process_clicked:
         else:
             for i, task in enumerate(tasks, 1):
                 task_name = task.get("task", task.get("title", f"Task {i}"))
-                assignee  = task.get("assigned_to", task.get("assignee", "")) or "Unassigned"
-                deadline  = task.get("deadline", task.get("due_date", "")) or "No deadline"
-                priority  = task.get("priority", "Medium")
-                notes     = task.get("notes", "")
+                assignee = task.get("assigned_to", task.get("assignee", "")) or "Unassigned"
+                deadline = task.get("deadline", task.get("due_date", "")) or "No deadline"
+                priority = task.get("priority", "Medium")
+                notes = task.get("notes", "")
 
                 missing = []
                 if assignee == "Unassigned":
@@ -1003,12 +984,12 @@ if process_clicked:
                 if deadline in ["", "No deadline", "Not specified"]:
                     missing.append("Deadline missing")
                 missing_text = " &middot; ".join(missing) if missing else "Complete"
-                chip_cls     = "chip-warn" if missing else "chip-ok"
+                chip_cls = "chip-warn" if missing else "chip-ok"
 
                 priority_dot = {
-                    "High":   "chip-dot-rust",
+                    "High": "chip-dot-rust",
                     "Medium": "chip-dot-gold",
-                    "Low":    "chip-dot-sage",
+                    "Low": "chip-dot-sage",
                 }.get(priority, "chip-dot-soft")
 
                 st.markdown(
