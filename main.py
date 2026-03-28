@@ -1,4 +1,3 @@
-
 import streamlit as st
 import os
 import tempfile
@@ -7,197 +6,184 @@ import json
 # ── Page config ────────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="MeetingMind · AI Task Extractor",
-    page_icon="🎙️",
+    page_icon="🧠",
     layout="wide",
 )
 
-# ── Custom CSS ─────────────────────────────────────────────────────────────────
+# ── Custom CSS & Theme ─────────────────────────────────────────────────────────
 st.markdown(
     """
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Outfit:wght@300;400;600;800&display=swap');
+
+    :root {
+        --bg-light: #FFFDF1;
+        --accent-peach: #FFCC99;
+        --accent-orange: #FF9955;
+        --accent-brown: #4D2D00;
+        --text-dark: #4D2D00;
+        --shadow: rgba(77, 45, 0, 0.1);
+    }
 
     html, body, [class*="css"] {
-        font-family: 'Syne', sans-serif;
+        font-family: 'Quicksand', sans-serif;
+        color: var(--text-dark);
     }
 
     .stApp {
-        background: #0d0f14;
-        color: #e8e4dc;
+        background-color: var(--bg-light);
+        background-image: radial-gradient(circle at 20% 20%, #ffcc9933 0%, transparent 20%),
+                          radial-gradient(circle at 80% 80%, #ff995522 0%, transparent 25%);
     }
 
-    .hero {
-        text-align: center;
-        padding: 2.5rem 0 1.5rem;
+    /* --- Logo & Header --- */
+    .logo-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding-top: 2rem;
     }
+    
+    .cute-logo {
+        width: 80px;
+        height: 80px;
+        background: var(--accent-orange);
+        border-radius: 20px;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 10px 20px var(--shadow);
+        animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+        0% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+        100% { transform: translateY(0px); }
+    }
+
     .hero h1 {
-        font-size: 3.2rem;
+        font-family: 'Outfit', sans-serif;
+        font-size: 3.5rem;
         font-weight: 800;
-        letter-spacing: -0.04em;
-        background: linear-gradient(135deg, #f5c842 0%, #f58c42 60%, #f54242 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        margin-bottom: 0.4rem;
+        color: var(--accent-brown);
+        margin-top: 1rem;
+        margin-bottom: 0;
     }
+
     .hero p {
-        color: #8d8a80;
-        font-family: 'DM Mono', monospace;
-        font-size: 0.88rem;
-        letter-spacing: 0.08em;
+        font-size: 1.1rem;
+        color: var(--accent-orange);
+        font-weight: 500;
+    }
+
+    /* --- Circular Dashboard Cards --- */
+    .stat-circle-container {
+        display: flex;
+        justify-content: space-around;
+        flex-wrap: wrap;
+        gap: 20px;
+        margin: 2rem 0;
+    }
+
+    .stat-card {
+        background: white;
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 10px 10px 20px #e6e4d9, -10px -10px 20px #ffffff;
+        transition: all 0.3s ease;
+        border: 4px solid var(--bg-light);
+    }
+
+    .stat-card:hover {
+        transform: scale(1.1) rotate(5deg);
+        box-shadow: 0 15px 30px var(--shadow);
+    }
+
+    .stat-val {
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: var(--accent-brown);
+    }
+
+    .stat-label {
+        font-size: 0.8rem;
         text-transform: uppercase;
-        margin-bottom: 0.6rem;
-    }
-    .hero-sub {
-        color: #b8b2a6;
-        font-size: 1rem;
-        max-width: 780px;
-        margin: 0 auto;
-        line-height: 1.7;
+        letter-spacing: 1px;
+        color: var(--accent-orange);
+        font-weight: 700;
     }
 
-    .divider {
-        border: none;
-        border-top: 1px solid #1e2028;
-        margin: 1.4rem 0 1.8rem;
-    }
-
+    /* --- UI Components --- */
     [data-testid="stFileUploader"] {
-        border: 2px dashed #2a2d36 !important;
-        border-radius: 14px !important;
-        background: #12141a !important;
-        padding: 1rem !important;
-    }
-    [data-testid="stFileUploader"]:hover {
-        border-color: #f5c842 !important;
+        background-color: white !important;
+        border: 3px dashed var(--accent-peach) !important;
+        border-radius: 25px !important;
+        padding: 2rem !important;
     }
 
     div.stButton > button {
-        width: 100%;
-        background: linear-gradient(135deg, #f5c842, #f58c42);
-        color: #0d0f14;
-        font-family: 'Syne', sans-serif;
+        background: var(--accent-brown);
+        color: white;
+        border-radius: 50px;
+        padding: 0.75rem 2rem;
         font-weight: 700;
-        font-size: 1rem;
         border: none;
-        border-radius: 12px;
-        padding: 0.8rem 0;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px var(--shadow);
     }
 
-    .section-label {
-        font-family: 'DM Mono', monospace;
-        font-size: 0.72rem;
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
-        color: #f5c842;
-        margin-bottom: 0.6rem;
-    }
-
-    .transcript-box, .summary-box, .panel-box {
-        background: #12141a;
-        border: 1px solid #1e2028;
-        border-radius: 12px;
-        padding: 1.2rem 1.4rem;
-    }
-
-    .transcript-box {
-        font-family: 'DM Mono', monospace;
-        font-size: 0.85rem;
-        line-height: 1.75;
-        color: #b0ab9e;
-        white-space: pre-wrap;
-    }
-
-    .summary-box {
-        font-size: 0.95rem;
-        line-height: 1.75;
-        color: #c5c0b3;
+    div.stButton > button:hover {
+        background: var(--accent-orange);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px var(--shadow);
     }
 
     .task-card {
-        background: #12141a;
-        border: 1px solid #1e2028;
-        border-left: 4px solid #f5c842;
-        border-radius: 12px;
-        padding: 1rem 1.2rem;
-        margin-bottom: 0.9rem;
-    }
-
-    .task-title {
-        font-weight: 700;
-        font-size: 1rem;
-        color: #f3efe7;
-        margin-bottom: 0.7rem;
-    }
-
-    .task-meta {
-        display: flex;
-        gap: 0.7rem;
-        flex-wrap: wrap;
-        margin-bottom: 0.6rem;
+        background: white;
+        border-radius: 20px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        border-left: 8px solid var(--accent-orange);
+        box-shadow: 5px 5px 15px var(--shadow);
     }
 
     .task-chip {
-        font-family: 'DM Mono', monospace;
-        font-size: 0.74rem;
-        padding: 0.28rem 0.7rem;
-        border-radius: 20px;
-        background: #1a1d24;
-        color: #8d8a80;
-    }
-    .task-chip span {
-        color: #f0ebe1;
-        margin-left: 0.28rem;
-    }
-
-    .task-notes {
-        color: #9f9a8c;
-        font-size: 0.86rem;
-        line-height: 1.6;
-        margin-top: 0.35rem;
-    }
-
-    .decision-item {
-        display: flex;
-        gap: 0.75rem;
-        align-items: flex-start;
-        padding: 0.6rem 0;
-        border-bottom: 1px solid #1a1c22;
-        color: #b0ab9e;
-        font-size: 0.93rem;
-        line-height: 1.6;
-    }
-    .decision-item:last-child { border-bottom: none; }
-
-    .decision-dot {
-        width: 7px;
-        height: 7px;
-        border-radius: 50%;
-        background: #f5c842;
-        margin-top: 0.5rem;
-        flex-shrink: 0;
-    }
-
-    [data-testid="stMetric"] {
-        background: #12141a;
-        border: 1px solid #1e2028;
-        padding: 0.8rem;
+        background: var(--bg-light);
+        color: var(--accent-brown);
+        padding: 5px 12px;
         border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        display: inline-block;
+        margin-right: 5px;
+        border: 1px solid var(--accent-peach);
     }
 
     .stTabs [data-baseweb="tab-list"] {
-        gap: 0.5rem;
+        gap: 10px;
+        background: transparent;
     }
 
     .stTabs [data-baseweb="tab"] {
-        background: #12141a;
-        border-radius: 10px;
-        padding: 0.5rem 1rem;
+        background: white;
+        border-radius: 15px 15px 0 0;
+        padding: 10px 20px;
+        color: var(--accent-brown);
+        font-weight: 600;
     }
 
-    .stAlert {
-        border-radius: 10px !important;
+    .stTabs [aria-selected="true"] {
+        background: var(--accent-peach) !important;
     }
+
     </style>
     """,
     unsafe_allow_html=True,
@@ -226,58 +212,52 @@ def compute_stats(result):
     risks = result.get("risks", [])
 
     total_tasks = len(tasks)
-    with_deadline = sum(
-        1 for t in tasks
-        if str(t.get("deadline", "")).strip() not in ["", "Not specified", "No deadline"]
-    )
-    unassigned = sum(
-        1 for t in tasks
-        if str(t.get("assigned_to", "Unassigned")).strip() == "Unassigned"
-    )
-    total_decisions = len(decisions)
-    total_risks = len(risks)
+    with_deadline = sum(1 for t in tasks if str(t.get("deadline", "")).strip() not in ["", "Not specified", "No deadline"])
+    unassigned = sum(1 for t in tasks if str(t.get("assigned_to", "Unassigned")).strip() == "Unassigned")
+    return total_tasks, with_deadline, unassigned, len(decisions), len(risks)
 
-    return total_tasks, with_deadline, unassigned, total_decisions, total_risks
-
-# ── Hero ───────────────────────────────────────────────────────────────────────
+# ── Header / Logo ──────────────────────────────────────────────────────────────
 st.markdown(
     """
-    <div class="hero">
-        <h1>🎙️ MeetingMind</h1>
-        <p>Upload a recording · Extract tasks · Track execution</p>
-        <div class="hero-sub">
-            Turn raw meeting audio into structured action items, owners, deadlines,
-            decisions, and missing-information risks — all in one place.
+    <div class="logo-container">
+        <div class="cute-logo">
+            <svg width="50" height="50" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM13 17H11V15H13V17ZM13 13H11V7H13V13Z" fill="white"/>
+                <circle cx="9" cy="10" r="1" fill="#4D2D00"/>
+                <circle cx="15" cy="10" r="1" fill="#4D2D00"/>
+            </svg>
+        </div>
+        <div class="hero">
+            <h1>MeetingMind</h1>
+            <p>Magic notes for busy brains ✨</p>
         </div>
     </div>
     """,
     unsafe_allow_html=True,
 )
 
-st.markdown("<hr class='divider'>", unsafe_allow_html=True)
-
 # ── Input area ─────────────────────────────────────────────────────────────────
-left, right = st.columns([2, 1])
+col1, col2 = st.columns([2, 1])
 
-with left:
-    st.markdown("<div class='section-label'>01 — Upload Recording</div>", unsafe_allow_html=True)
+with col1:
+    st.markdown("### 📥 Drop your recording")
     uploaded_file = st.file_uploader(
-        label="Drop your meeting audio here",
+        label="Upload audio",
         type=["mp3", "wav", "m4a"],
         label_visibility="collapsed",
     )
-
     if uploaded_file:
-        st.audio(uploaded_file, format=f"audio/{uploaded_file.name.split('.')[-1]}")
+        st.audio(uploaded_file)
 
-with right:
-    st.markdown("<div class='section-label'>02 — Process</div>", unsafe_allow_html=True)
-    process_clicked = st.button("⚡ Process Meeting")
+with col2:
+    st.markdown("### ⚡ Action")
+    st.write("Ready to transform your talk?")
+    process_clicked = st.button("Start AI Magic")
 
 # ── Processing logic ───────────────────────────────────────────────────────────
 if process_clicked:
     if not uploaded_file:
-        st.warning("Please upload an audio file before processing.")
+        st.warning("Oops! Please upload an audio file first.")
         st.stop()
 
     suffix = os.path.splitext(uploaded_file.name)[-1]
@@ -286,142 +266,64 @@ if process_clicked:
         tmp_path = tmp.name
 
     transcribe_audio = load_stt()
-    if transcribe_audio is None:
-        st.stop()
-
-    with st.spinner("Transcribing audio..."):
-        try:
-            transcript = transcribe_audio(tmp_path)
-            if not transcript or not isinstance(transcript, str):
-                raise ValueError("Transcription returned empty or invalid result.")
-        except Exception as e:
-            st.error(f"Transcription failed: {e}")
-            st.stop()
-
     extract_tasks = load_llm()
-    if extract_tasks is None:
-        st.stop()
 
-    with st.spinner("Extracting tasks with AI..."):
-        try:
+    if transcribe_audio and extract_tasks:
+        with st.spinner("🧠 Listening closely to your meeting..."):
+            transcript = transcribe_audio(tmp_path)
+        
+        with st.spinner("✨ Organizing tasks and decisions..."):
             result = extract_tasks(transcript)
-            if not isinstance(result, dict):
-                raise ValueError("Task extraction did not return a dictionary.")
-        except Exception as e:
-            st.error(f"Task extraction failed: {e}")
-            st.stop()
 
-    try:
-        os.unlink(tmp_path)
-    except OSError:
-        pass
+        # Cleanup
+        try: os.unlink(tmp_path)
+        except: pass
 
-    st.markdown("<hr class='divider'>", unsafe_allow_html=True)
+        # ── Dashboard Circular Metrics ──
+        t, d, u, dec, r = compute_stats(result)
+        
+        st.markdown(f"""
+            <div class="stat-circle-container">
+                <div class="stat-card"><div class="stat-val">{t}</div><div class="stat-label">Tasks</div></div>
+                <div class="stat-card" style="border-color: #FFCC99"><div class="stat-val">{d}</div><div class="stat-label">Deadlines</div></div>
+                <div class="stat-card" style="border-color: #FF9955"><div class="stat-val">{u}</div><div class="stat-label">Missing</div></div>
+                <div class="stat-card" style="border-color: #4D2D00"><div class="stat-val">{dec}</div><div class="stat-label">Decisions</div></div>
+                <div class="stat-card"><div class="stat-val">{r}</div><div class="stat-label">Risks</div></div>
+            </div>
+        """, unsafe_allow_html=True)
 
-    # ── Metrics ───────────────────────────────────────────────────────────────
-    total_tasks, with_deadline, unassigned, total_decisions, total_risks = compute_stats(result)
+        # ── Result Tabs ──
+        tab1, tab2, tab3, tab4 = st.tabs(["📝 Tasks", "📖 Summary", "🤝 Decisions", "📄 Transcript"])
 
-    st.markdown("<div class='section-label'>03 — Dashboard Snapshot</div>", unsafe_allow_html=True)
-    c1, c2, c3, c4, c5 = st.columns(5)
-    c1.metric("Tasks", total_tasks)
-    c2.metric("Deadlines", with_deadline)
-    c3.metric("Unassigned", unassigned)
-    c4.metric("Decisions", total_decisions)
-    c5.metric("Risks", total_risks)
-
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    tasks = result.get("tasks", [])
-    summary = result.get("summary", "")
-    decisions = result.get("decisions", [])
-    risks = result.get("risks", [])
-
-    # ── Tabs ──────────────────────────────────────────────────────────────────
-    tab1, tab2, tab3, tab4, tab5 = st.tabs(
-        ["Transcript", "Tasks", "Summary", "Decisions", "Risks"]
-    )
-
-    with tab1:
-        st.markdown("<div class='section-label'>Transcript</div>", unsafe_allow_html=True)
-        st.markdown(
-            f"<div class='transcript-box'>{transcript}</div>",
-            unsafe_allow_html=True,
-        )
-
-    with tab2:
-        st.markdown("<div class='section-label'>Extracted Tasks</div>", unsafe_allow_html=True)
-        if not tasks:
-            st.info("No tasks were extracted from this meeting.")
-        else:
-            for i, task in enumerate(tasks, 1):
-                task_name = task.get("task", task.get("title", f"Task {i}"))
-                assignee = task.get("assigned_to", task.get("assignee", "")) or "Unassigned"
-                deadline = task.get("deadline", task.get("due_date", "")) or "No deadline"
-                priority = task.get("priority", "Medium")
-                notes = task.get("notes", "")
-
-                missing = []
-                if assignee == "Unassigned":
-                    missing.append("Owner missing")
-                if deadline in ["", "No deadline", "Not specified"]:
-                    missing.append("Deadline missing")
-
-                missing_text = " • ".join(missing) if missing else "Complete"
-
-                st.markdown(
-                    f"""
-                    <div class="task-card">
-                        <div class="task-title">{i}. {task_name}</div>
-                        <div class="task-meta">
-                            <div class="task-chip">👤<span>{assignee}</span></div>
-                            <div class="task-chip">📅<span>{deadline}</span></div>
-                            <div class="task-chip">⚡<span>{priority}</span></div>
-                            <div class="task-chip">🛠️<span>{missing_text}</span></div>
+        with tab1:
+            tasks = result.get("tasks", [])
+            if not tasks:
+                st.info("Everything looks clear! No specific tasks found.")
+            else:
+                for i, task in enumerate(tasks, 1):
+                    task_name = task.get("task", task.get("title", f"Task {i}"))
+                    assignee = task.get("assigned_to", "Unassigned")
+                    deadline = task.get("deadline", "No deadline")
+                    st.markdown(f"""
+                        <div class="task-card">
+                            <h4 style="margin-top:0; color:#4D2D00;">{task_name}</h4>
+                            <span class="task-chip">👤 {assignee}</span>
+                            <span class="task-chip">📅 {deadline}</span>
+                            <p style="margin-top:10px; font-size:0.9rem; color:#666;">{task.get('notes', '')}</p>
                         </div>
-                        {"<div class='task-notes'>" + notes + "</div>" if notes else ""}
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
+                    """, unsafe_allow_html=True)
 
-    with tab3:
-        st.markdown("<div class='section-label'>Summary</div>", unsafe_allow_html=True)
-        if summary:
-            st.markdown(f"<div class='summary-box'>{summary}</div>", unsafe_allow_html=True)
-        else:
-            st.info("No summary available.")
+        with tab2:
+            st.markdown(f"<div style='background:white; padding:2rem; border-radius:20px;'>{result.get('summary', 'No summary generated.')}</div>", unsafe_allow_html=True)
 
-    with tab4:
-        st.markdown("<div class='section-label'>Decisions</div>", unsafe_allow_html=True)
-        if not decisions:
-            st.info("No decisions were recorded.")
-        else:
-            items_html = "".join(
-                f"<div class='decision-item'><div class='decision-dot'></div><div>{d}</div></div>"
-                for d in decisions
-            )
-            st.markdown(
-                f"<div class='panel-box'>{items_html}</div>",
-                unsafe_allow_html=True,
-            )
+        with tab3:
+            decisions = result.get("decisions", [])
+            for dec in decisions:
+                st.markdown(f"✅ **{dec}**")
 
-    with tab5:
-        st.markdown("<div class='section-label'>Risks / Missing Info</div>", unsafe_allow_html=True)
-        if not risks:
-            st.success("No major risks detected.")
-        else:
-            for risk in risks:
-                st.warning(risk)
+        with tab4:
+            st.text_area("Full Transcript", transcript, height=300)
 
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    # ── Download JSON ─────────────────────────────────────────────────────────
-    st.download_button(
-        label="⬇ Download JSON Output",
-        data=json.dumps(result, indent=2),
-        file_name="meeting_output.json",
-        mime="application/json",
-    )
-
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.success("Meeting processed successfully.")
+        st.markdown("---")
+        st.download_button("⬇️ Export Results", json.dumps(result, indent=2), "meetingmind_report.json")
+        st.success("All done! Your meeting has been Mind-ed. 🧠✨")
