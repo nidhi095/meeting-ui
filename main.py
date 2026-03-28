@@ -17,19 +17,19 @@ st.markdown(
     @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=DM+Mono:wght@300;400;500&family=Lora:ital,wght@0,400;0,600;1,400&display=swap');
 
     :root {
-        --bg:          #f5f0e8;
-        --bg-deep:     #ede7d9;
-        --bg-card:     #faf7f2;
-        --ink:         #2c2416;
-        --ink-mid:     #5c4f3a;
-        --ink-soft:    #9a8e78;
-        --gold:        #c8922a;
-        --gold-light:  #e8b84b;
-        --rust:        #b85c38;
-        --sage:        #6b8c6e;
-        --warm-white:  #fffdf8;
-        --border:      #ddd5c0;
-        --shadow:      rgba(44, 36, 22, 0.10);
+        --bg:          #e8dcc8;
+        --bg-deep:     #ddd0b5;
+        --bg-card:     #f0e9d8;
+        --ink:         #1e1608;
+        --ink-mid:     #3d3020;
+        --ink-soft:    #7a6a50;
+        --gold:        #c07818;
+        --gold-light:  #e8a030;
+        --rust:        #b04020;
+        --sage:        #4a7a50;
+        --warm-white:  #f8f2e4;
+        --border:      #c8b898;
+        --shadow:      rgba(30, 22, 8, 0.18);
     }
 
     @keyframes fadeUp {
@@ -97,9 +97,9 @@ st.markdown(
         border: 1.5px solid var(--border);
         animation: spin-slow linear infinite;
     }
-    .bg-orbs span:nth-child(1) { width: 420px; height: 420px; top: -140px; right: -100px; animation-duration: 60s; opacity: 0.5; }
-    .bg-orbs span:nth-child(2) { width: 260px; height: 260px; bottom: 80px; left: -80px; animation-duration: 45s; animation-direction: reverse; opacity: 0.4; }
-    .bg-orbs span:nth-child(3) { width: 180px; height: 180px; top: 40%; left: 55%; animation-duration: 35s; opacity: 0.25; border-style: dashed; }
+    .bg-orbs span:nth-child(1) { width: 420px; height: 420px; top: -140px; right: -100px; animation-duration: 60s; opacity: 0.7; }
+    .bg-orbs span:nth-child(2) { width: 260px; height: 260px; bottom: 80px; left: -80px; animation-duration: 45s; animation-direction: reverse; opacity: 0.6; }
+    .bg-orbs span:nth-child(3) { width: 180px; height: 180px; top: 40%; left: 55%; animation-duration: 35s; opacity: 0.45; border-style: dashed; }
 
     /* ── Hero ── */
     .hero {
@@ -207,43 +207,52 @@ st.markdown(
     /* ── Upload zone ── */
     [data-testid="stFileUploader"] {
         border: 2px dashed var(--border) !important;
-        border-radius: 18px !important;
+        border-radius: 60px !important;
         background: var(--bg-card) !important;
-        padding: 1.2rem !important;
+        padding: 1.8rem 2rem !important;
         transition: border-color 0.25s ease, box-shadow 0.25s ease !important;
         position: relative;
         z-index: 1;
     }
     [data-testid="stFileUploader"]:hover {
         border-color: var(--gold) !important;
-        box-shadow: 0 0 0 4px rgba(200, 146, 42, 0.08) !important;
+        box-shadow: 0 0 0 5px rgba(192, 120, 24, 0.10) !important;
     }
     [data-testid="stFileUploader"] label {
         color: var(--ink-mid) !important;
         font-family: 'DM Mono', monospace !important;
     }
+    /* Override inner dark drop zone Streamlit renders */
+    [data-testid="stFileUploader"] section {
+        border-radius: 40px !important;
+        background: var(--bg-deep) !important;
+        border: none !important;
+    }
 
     /* ── Button ── */
     div.stButton > button {
-        width: 100%;
+        width: auto;
+        min-width: 180px;
         background: var(--ink);
         color: var(--warm-white);
         font-family: 'Playfair Display', serif;
         font-weight: 700;
-        font-size: 1rem;
+        font-size: 0.95rem;
         border: none;
         border-radius: 50px;
-        padding: 0.9rem 0;
+        padding: 0.75rem 2rem;
         letter-spacing: 0.04em;
         transition: background 0.22s ease, transform 0.15s ease, box-shadow 0.22s ease;
         position: relative;
         z-index: 1;
+        display: block;
+        margin-top: 0.4rem;
     }
     div.stButton > button:hover {
         background: var(--gold);
         color: var(--ink);
         transform: translateY(-2px);
-        box-shadow: 0 8px 24px rgba(200, 146, 42, 0.3);
+        box-shadow: 0 8px 24px rgba(192, 120, 24, 0.35);
     }
     div.stButton > button:active {
         transform: translateY(0);
@@ -712,7 +721,7 @@ st.markdown(
 )
 
 # ── Input area ─────────────────────────────────────────────────────────────────
-left, right = st.columns([2, 1])
+left, _, right = st.columns([5, 1, 2])
 
 with left:
     st.markdown("<div class='section-label'>01 &mdash; Upload Recording</div>", unsafe_allow_html=True)
