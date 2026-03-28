@@ -2,6 +2,9 @@ import streamlit as st
 import os
 import tempfile
 import json
+import subprocess
+import math
+import shutil
 
 # ── Page config ────────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -68,14 +71,13 @@ st.markdown(
         color: var(--ink) !important;
     }
 
-    /* ── Nuke ALL white / near-white text Streamlit injects ── */
     p, span, div, label, li, small, strong, em, h1, h2, h3, h4, h5, h6,
     [class*="st-"], [data-testid] p, [data-testid] span,
     [data-testid] label, [data-testid] div,
     .stMarkdown, .stMarkdown *, .stText, .element-container * {
         color: var(--ink-mid) !important;
     }
-    /* Exceptions: things that intentionally use light text on dark bg */
+
     div.stButton > button,
     [data-testid="stDownloadButton"] button,
     .stTabs [aria-selected="true"],
@@ -87,7 +89,7 @@ st.markdown(
     .decision-num {
         color: unset !important;
     }
-    /* File uploader specifically */
+
     [data-testid="stFileUploader"] p,
     [data-testid="stFileUploader"] span,
     [data-testid="stFileUploader"] div,
@@ -95,20 +97,18 @@ st.markdown(
     [data-testid="stFileUploader"] label {
         color: var(--ink-mid) !important;
     }
-    /* Spinner text */
+
     .stSpinner p, .stSpinner span, .stSpinner label {
         color: var(--ink-mid) !important;
     }
-    /* Audio player label */
+
     audio { filter: sepia(0.15) contrast(0.9); }
-    /* Any stray white backgrounds Streamlit adds */
     [data-testid="stMarkdownContainer"] * { color: var(--ink-mid); }
 
     .stApp {
         background: var(--bg) !important;
     }
 
-    /* ── Noise texture overlay ── */
     .stApp::before {
         content: '';
         position: fixed;
@@ -119,7 +119,6 @@ st.markdown(
         opacity: 0.6;
     }
 
-    /* ── Decorative circles background ── */
     .bg-orbs {
         position: fixed;
         inset: 0;
@@ -151,7 +150,6 @@ st.markdown(
         box-shadow: inset 0 0 30px rgba(74,122,80,0.2), 0 0 0 2px rgba(74,122,80,0.12);
     }
 
-    /* ── Hero ── */
     .hero {
         text-align: center;
         padding: 3rem 0 1.8rem;
@@ -206,7 +204,6 @@ st.markdown(
         font-style: italic;
     }
 
-    /* ── Divider ── */
     .divider {
         border: none;
         height: 1px;
@@ -217,7 +214,6 @@ st.markdown(
     }
     .divider-dot { display: none; }
 
-    /* ── Section label ── */
     .section-label {
         font-family: 'DM Mono', monospace;
         font-size: 0.7rem;
@@ -239,7 +235,6 @@ st.markdown(
         max-width: 80px;
     }
 
-    /* ── Upload zone ── */
     [data-testid="stFileUploader"] {
         border: 2px dashed var(--border) !important;
         border-radius: 60px !important;
@@ -257,7 +252,6 @@ st.markdown(
         color: var(--ink-mid) !important;
         font-family: 'DM Mono', monospace !important;
     }
-    /* Override inner dark drop zone Streamlit renders */
     [data-testid="stFileUploader"] section {
         border-radius: 40px !important;
         background: var(--bg-deep) !important;
@@ -287,7 +281,6 @@ st.markdown(
         color: var(--ink) !important;
     }
 
-    /* ── Button ── */
     div.stButton > button {
         width: auto;
         min-width: 180px;
@@ -326,7 +319,6 @@ st.markdown(
         border: none !important;
     }
 
-    /* ── Metric cards ── */
     [data-testid="stMetric"] {
         background: var(--bg-card) !important;
         border: 1.5px solid var(--border) !important;
@@ -360,7 +352,6 @@ st.markdown(
         color: var(--ink) !important;
     }
 
-    /* ── Tabs ── */
     .stTabs [data-baseweb="tab-list"] {
         gap: 0.4rem;
         background: var(--bg-deep) !important;
@@ -390,7 +381,6 @@ st.markdown(
         padding-top: 1.4rem;
     }
 
-    /* ── Transcript box ── */
     .transcript-box {
         background: var(--bg-card);
         border: 1.5px solid var(--border);
@@ -407,7 +397,6 @@ st.markdown(
         z-index: 1;
     }
 
-    /* ── Summary box ── */
     .summary-box {
         background: var(--bg-card);
         border: 1.5px solid var(--border);
@@ -424,7 +413,6 @@ st.markdown(
         z-index: 1;
     }
 
-    /* ── Task cards ── */
     .task-card {
         background: var(--bg-card);
         border: 1.5px solid var(--border);
@@ -526,7 +514,6 @@ st.markdown(
         border-top: 1px solid var(--border);
     }
 
-    /* ── Decision circles ── */
     .decisions-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -584,7 +571,6 @@ st.markdown(
         margin-bottom: 0.4rem;
     }
 
-    /* ── Risk pills ── */
     .risk-item {
         background: rgba(184,92,56,0.06);
         border: 1.5px solid rgba(184,92,56,0.25);
@@ -625,7 +611,6 @@ st.markdown(
         padding-top: 0.1rem;
     }
 
-    /* ── Panel box (generic) ── */
     .panel-box {
         background: var(--bg-card);
         border: 1.5px solid var(--border);
@@ -635,14 +620,12 @@ st.markdown(
         z-index: 1;
     }
 
-    /* ── Success / info / warning ── */
     .stAlert {
         border-radius: 14px !important;
         background: var(--bg-card) !important;
         border-color: var(--border) !important;
     }
 
-    /* ── Download button ── */
     [data-testid="stDownloadButton"] button {
         background: transparent !important;
         border: 2px solid var(--ink) !important;
@@ -660,7 +643,6 @@ st.markdown(
         color: var(--warm-white) !important;
     }
 
-    /* ── Stagger task cards ── */
     .task-card:nth-child(1) { animation-delay: 0.05s; }
     .task-card:nth-child(2) { animation-delay: 0.10s; }
     .task-card:nth-child(3) { animation-delay: 0.15s; }
@@ -673,19 +655,16 @@ st.markdown(
     .decision-circle:nth-child(4) { animation-delay: 0.26s; }
     .decision-circle:nth-child(5) { animation-delay: 0.33s; }
 
-    /* ── Metric stagger ── */
     [data-testid="stMetric"]:nth-child(1) { animation-delay: 0.05s; }
     [data-testid="stMetric"]:nth-child(2) { animation-delay: 0.12s; }
     [data-testid="stMetric"]:nth-child(3) { animation-delay: 0.19s; }
     [data-testid="stMetric"]:nth-child(4) { animation-delay: 0.26s; }
     [data-testid="stMetric"]:nth-child(5) { animation-delay: 0.33s; }
 
-    /* ── Spinner ── */
     .stSpinner > div {
         border-top-color: var(--gold) !important;
     }
 
-    /* ── Audio player ── */
     audio {
         border-radius: 50px;
         filter: sepia(0.2);
@@ -700,9 +679,7 @@ st.markdown(
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
     ::-webkit-scrollbar-thumb:hover { background: var(--gold); }
 
-    /* ── Adjust column padding ── */
     [data-testid="column"] { padding: 0 0.5rem; }
-
     </style>
     """,
     unsafe_allow_html=True,
@@ -749,6 +726,110 @@ def compute_stats(result):
         if str(t.get("assigned_to", "Unassigned")).strip() == "Unassigned"
     )
     return total_tasks, with_deadline, unassigned, len(decisions), len(risks)
+
+def get_audio_duration(file_path):
+    cmd = [
+        "ffprobe",
+        "-v", "error",
+        "-show_entries", "format=duration",
+        "-of", "default=noprint_wrappers=1:nokey=1",
+        file_path
+    ]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        raise RuntimeError(f"Could not read audio duration: {result.stderr}")
+    return float(result.stdout.strip())
+
+def split_audio(file_path, chunk_length_sec=120):
+    """
+    Split audio into 2-minute chunks using ffmpeg.
+    Returns (chunk_paths, chunk_dir)
+    """
+    duration = get_audio_duration(file_path)
+    total_chunks = math.ceil(duration / chunk_length_sec)
+
+    chunk_dir = tempfile.mkdtemp(prefix="meetingmind_chunks_")
+    chunk_paths = []
+
+    for i in range(total_chunks):
+        start_time = i * chunk_length_sec
+        chunk_path = os.path.join(chunk_dir, f"chunk_{i + 1}.wav")
+
+        cmd = [
+            "ffmpeg",
+            "-y",
+            "-i", file_path,
+            "-ss", str(start_time),
+            "-t", str(chunk_length_sec),
+            "-ar", "16000",
+            "-ac", "1",
+            chunk_path
+        ]
+
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.returncode != 0:
+            raise RuntimeError(f"ffmpeg failed on chunk {i + 1}: {result.stderr}")
+
+        if os.path.exists(chunk_path):
+            chunk_paths.append(chunk_path)
+
+    return chunk_paths, chunk_dir
+
+def merge_chunk_results(results):
+    merged = {
+        "summary": "",
+        "decisions": [],
+        "tasks": [],
+        "risks": []
+    }
+
+    summary_parts = []
+
+    for result in results:
+        if not isinstance(result, dict):
+            continue
+
+        summary = result.get("summary", "")
+        if summary:
+            summary_parts.append(summary)
+
+        merged["decisions"].extend(result.get("decisions", []))
+        merged["tasks"].extend(result.get("tasks", []))
+        merged["risks"].extend(result.get("risks", []))
+
+    seen_decisions = set()
+    unique_decisions = []
+    for d in merged["decisions"]:
+        d_clean = str(d).strip()
+        if d_clean and d_clean not in seen_decisions:
+            seen_decisions.add(d_clean)
+            unique_decisions.append(d_clean)
+    merged["decisions"] = unique_decisions
+
+    seen_risks = set()
+    unique_risks = []
+    for r in merged["risks"]:
+        r_clean = str(r).strip()
+        if r_clean and r_clean not in seen_risks:
+            seen_risks.add(r_clean)
+            unique_risks.append(r_clean)
+    merged["risks"] = unique_risks
+
+    merged["summary"] = " ".join(summary_parts).strip() if summary_parts else "No summary generated."
+    return merged
+
+def cleanup_temp_files(tmp_path=None, chunk_dir=None):
+    if tmp_path and os.path.exists(tmp_path):
+        try:
+            os.remove(tmp_path)
+        except Exception:
+            pass
+
+    if chunk_dir and os.path.exists(chunk_dir):
+        try:
+            shutil.rmtree(chunk_dir, ignore_errors=True)
+        except Exception:
+            pass
 
 # ── Microphone SVG logo ────────────────────────────────────────────────────────
 MIC_SVG = """<svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -805,40 +886,67 @@ if process_clicked:
         st.stop()
 
     suffix = os.path.splitext(uploaded_file.name)[-1]
-    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-        tmp.write(uploaded_file.read())
-        tmp_path = tmp.name
-
-    transcribe_audio = load_stt()
-    if transcribe_audio is None:
-        st.stop()
-
-    with st.spinner("Transcribing audio..."):
-        try:
-            transcript = transcribe_audio(tmp_path)
-            if not transcript or not isinstance(transcript, str):
-                raise ValueError("Transcription returned empty or invalid result.")
-        except Exception as e:
-            st.error(f"Transcription failed: {e}")
-            st.stop()
-
-    extract_tasks = load_llm()
-    if extract_tasks is None:
-        st.stop()
-
-    with st.spinner("Extracting tasks with AI..."):
-        try:
-            result = extract_tasks(transcript)
-            if not isinstance(result, dict):
-                raise ValueError("Task extraction did not return a dictionary.")
-        except Exception as e:
-            st.error(f"Task extraction failed: {e}")
-            st.stop()
+    tmp_path = None
+    chunk_dir = None
 
     try:
-        os.unlink(tmp_path)
-    except OSError:
-        pass
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+            tmp.write(uploaded_file.read())
+            tmp_path = tmp.name
+
+        transcribe_audio = load_stt()
+        if transcribe_audio is None:
+            st.stop()
+
+        extract_tasks = load_llm()
+        if extract_tasks is None:
+            st.stop()
+
+        with st.spinner("Preparing audio chunks..."):
+            chunk_paths, chunk_dir = split_audio(tmp_path, chunk_length_sec=120)
+
+        if not chunk_paths:
+            raise ValueError("No audio chunks were created.")
+
+        st.info(f"Audio split into {len(chunk_paths)} chunk(s). Processing may take some time.")
+
+        progress_bar = st.progress(0)
+        status_text = st.empty()
+
+        transcript_parts = []
+        chunk_results = []
+
+        for idx, chunk_path in enumerate(chunk_paths, start=1):
+            status_text.info(f"Processing chunk {idx} of {len(chunk_paths)}...")
+
+            chunk_transcript = transcribe_audio(chunk_path)
+            if not chunk_transcript or not isinstance(chunk_transcript, str):
+                raise ValueError(f"Chunk {idx} transcription returned empty or invalid result.")
+
+            if chunk_transcript.startswith("Error:"):
+                raise ValueError(f"Chunk {idx} transcription failed: {chunk_transcript}")
+
+            transcript_parts.append(chunk_transcript)
+
+            chunk_result = extract_tasks(chunk_transcript)
+            if not isinstance(chunk_result, dict):
+                raise ValueError(f"Chunk {idx} task extraction did not return a dictionary.")
+
+            chunk_results.append(chunk_result)
+
+            progress_bar.progress(idx / len(chunk_paths))
+
+        transcript = "\n\n".join(transcript_parts).strip()
+        result = merge_chunk_results(chunk_results)
+
+        status_text.success("Processing complete.")
+
+    except Exception as e:
+        cleanup_temp_files(tmp_path, chunk_dir)
+        st.error(f"Processing failed: {e}")
+        st.stop()
+
+    cleanup_temp_files(tmp_path, chunk_dir)
 
     st.markdown(
         """<hr class='divider'><div class='divider-dot'>
@@ -973,7 +1081,6 @@ if process_clicked:
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # ── Download JSON ─────────────────────────────────────────────────────────
     st.download_button(
         label="Download JSON Output",
         data=json.dumps(result, indent=2),
