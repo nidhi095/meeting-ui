@@ -707,8 +707,7 @@ st.markdown(
         margin-top: 0.5rem;
     }
 
-    [data-testid="stFileUploader"] section svg,
-    [data-testid="stFileUploader"] section [data-testid="stFileUploaderDropzoneInstructions"] > div > span {
+    [data-testid="stFileUploaderDropzoneInstructions"] svg {
         display: none !important;
     }
     ::-webkit-scrollbar { width: 6px; }
