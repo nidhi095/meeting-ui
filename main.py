@@ -2,7 +2,57 @@ import streamlit as st
 import os
 import tempfile
 import json
-from pydub import AudioSegment
+import subprocess
+import math
+
+def get_audio_duration(file_path):
+    cmd = [
+        "ffprobe",
+        "-v", "error",
+        "-show_entries", "format=duration",
+        "-of", "default=noprint_wrappers=1:nokey=1",
+        file_path
+    ]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        raise RuntimeError(f"Could not read audio duration: {result.stderr}")
+    return float(result.stdout.strip())
+
+def split_audio(file_path, chunk_length_sec=300):
+    """
+    Split audio into chunk_length_sec chunks using ffmpeg.
+    Returns (chunk_paths, chunk_dir)
+    """
+    duration = get_audio_duration(file_path)
+    total_chunks = math.ceil(duration / chunk_length_sec)
+
+    chunk_dir = tempfile.mkdtemp(prefix="meetingmind_chunks_")
+    chunk_paths = []
+
+    for i in range(total_chunks):
+        start_time = i * chunk_length_sec
+        chunk_path = os.path.join(chunk_dir, f"chunk_{i+1}.wav")
+
+        cmd = [
+            "ffmpeg",
+            "-y",
+            "-i", file_path,
+            "-ss", str(start_time),
+            "-t", str(chunk_length_sec),
+            "-ar", "16000",
+            "-ac", "1",
+            chunk_path
+        ]
+
+        result = subprocess.run(cmd, capture_output=True, text=True)
+
+        if result.returncode != 0:
+            raise RuntimeError(f"ffmpeg failed on chunk {i+1}: {result.stderr}")
+
+        if os.path.exists(chunk_path):
+            chunk_paths.append(chunk_path)
+
+    return chunk_paths, chunk_dir
 
 # ── Page config ────────────────────────────────────────────────────────────────
 st.set_page_config(
