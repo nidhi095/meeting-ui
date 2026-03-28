@@ -215,22 +215,7 @@ st.markdown(
         position: relative;
         z-index: 1;
     }
-    .divider-dot {
-        text-align: center;
-        margin-top: -10px;
-        position: relative;
-        z-index: 1;
-    }
-    .divider-dot span {
-        display: inline-block;
-        width: 10px; height: 10px;
-        background: var(--gold);
-        border-radius: 50%;
-        margin: 0 3px;
-        animation: floatBubble 2.4s ease-in-out infinite;
-    }
-    .divider-dot span:nth-child(2) { animation-delay: 0.3s; background: var(--gold-light); }
-    .divider-dot span:nth-child(3) { animation-delay: 0.6s; background: var(--rust); }
+    .divider-dot { display: none; }
 
     /* ── Section label ── */
     .section-label {
