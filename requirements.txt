@@ -1,0 +1,5 @@
+streamlit
+faster-whisper
+google-generativeai
+pydub
+ffmpeg-python
